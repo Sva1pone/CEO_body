@@ -12,10 +12,19 @@ import { api } from "../../../shared/api";
 
 export function DaySetup({ data, mutate }) {
   const [training, setTraining] = useState(null);
-  const [type, setType] = useState("Ноги");
+  const [type, setType] = useState("");
+  const [templates, setTemplates] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const submitting = useRef(false);
+  useEffect(() => {
+    api("/api/workout/templates")
+      .then((payload) => {
+        setTemplates(payload.templates);
+        setType((current) => current || payload.templates[0]?.name || "");
+      })
+      .catch((reason) => setError(reason.message));
+  }, []);
   async function finish() {
     if (submitting.current) return;
 
@@ -33,7 +42,7 @@ export function DaySetup({ data, mutate }) {
           method: "POST",
           body: JSON.stringify({
             training_planned: training,
-            day_type: training ? type : "Отдых",
+            day_type: training ? type.trim() : "Отдых",
           }),
         }),
       );
@@ -95,25 +104,37 @@ export function DaySetup({ data, mutate }) {
           </button>
         </div>
         {training && (
-          <div className="flex gap-2">
-            {["Ноги", "Грудь", "Тестовый шаблон B"].map((item) => (
-              <button
-                key={item}
-                className={`min-h-10 cursor-pointer rounded-full border px-3 text-xs font-bold transition-[transform,background-color,border-color] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71b9ff] active:scale-[0.96] ${
-                  type === item
-                    ? "border-[#71b9ff] bg-[#71b9ff] text-[#08111d]"
-                    : "border-white/15 bg-white/[0.06] text-[#b8c0cf] hover:border-[#71b9ff]/60 hover:text-white"
-                }`}
-                onClick={() => setType(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
+          templates.length ? (
+            <div className="flex flex-wrap gap-2">
+              {templates.map((item) => (
+                <button
+                  key={item.id}
+                  className={`min-h-10 cursor-pointer rounded-full border px-3 text-xs font-bold transition-[transform,background-color,border-color] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71b9ff] active:scale-[0.96] ${
+                    type === item.name
+                      ? "border-[#71b9ff] bg-[#71b9ff] text-[#08111d]"
+                      : "border-white/15 bg-white/[0.06] text-[#b8c0cf] hover:border-[#71b9ff]/60 hover:text-white"
+                  }`}
+                  onClick={() => setType(item.name)}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <label className="grid max-w-sm gap-2 text-sm font-extrabold text-[#c7cfdb]">
+              Тип тренировки
+              <input
+                className="min-h-11 rounded-xl border border-white/12 bg-white/[0.06] px-3.5 text-sm text-white outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[#778295] focus:border-[#71b9ff]/70 focus:bg-white/[0.09] focus:shadow-[0_0_0_4px_rgba(66,169,255,0.1)]"
+                value={type}
+                onChange={(event) => setType(event.target.value)}
+                placeholder="Например: силовая тренировка"
+              />
+            </label>
+          )
         )}
         <button
           className="mt-[22px] inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[13px] border border-[var(--violet)] bg-[linear-gradient(135deg,#7c6dff,#5c49ed)] px-5 font-extrabold text-white shadow-[0_10px_25px_rgba(109,93,252,0.27)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_15px_31px_rgba(109,93,252,0.36)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9b91ff] active:scale-[0.96] disabled:cursor-default disabled:opacity-45 disabled:hover:translate-y-0 disabled:active:scale-100"
-          disabled={training === null || busy}
+          disabled={training === null || (training && !type.trim()) || busy}
           onClick={finish}
         >
           {busy ? "Сохраняю…" : "Начать с завтрака"} <ArrowRight size={19} />

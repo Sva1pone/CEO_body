@@ -31,6 +31,10 @@ test("new day setup renders without changing stored data", async ({ page }, test
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /Начать с завтрака/ })).toBeDisabled();
 
+  await page.getByRole("button", { name: "Да Будет тренировка" }).click();
+  await expect(page.getByRole("button", { name: "Тестовый шаблон A" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Начать с завтрака/ })).toBeEnabled();
+
   const horizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );

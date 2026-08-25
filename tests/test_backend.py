@@ -288,7 +288,7 @@ class BackendApiTest(unittest.TestCase):
             cursor = con.execute(
                 """INSERT INTO workouts(day_id, title, duration_minutes, intensity_met, note, created_at)
                    VALUES (?, ?, ?, ?, ?, ?)""",
-                (day["id"], "Ноги", 50, 5.0, "", datetime.now().isoformat()),
+                (day["id"], "Тестовый тип дня", 50, 5.0, "", datetime.now().isoformat()),
             )
             workout_id = cursor.lastrowid
             product_id = con.execute("SELECT id FROM products ORDER BY id LIMIT 1").fetchone()[0]
@@ -469,11 +469,13 @@ class BackendApiTest(unittest.TestCase):
         template = initial["templates"][0]
         created_group = self.client.post(
             "/api/exercise-subgroups",
-            json={"template_id": template["id"], "name": "Грудь"},
+            json={"template_id": template["id"], "name": "Тестовая подгруппа"},
         )
         self.assertEqual(created_group.status_code, 201)
         subgroup = next(
-            row for row in created_group.get_json()["subgroups"] if row["name"] == "Грудь"
+            row
+            for row in created_group.get_json()["subgroups"]
+            if row["name"] == "Тестовая подгруппа"
         )
         first = self.client.post(
             "/api/exercises",
