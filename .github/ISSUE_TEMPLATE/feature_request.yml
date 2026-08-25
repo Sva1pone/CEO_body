@@ -1,0 +1,46 @@
+name: Предложить улучшение
+description: Идея нового сценария или улучшения существующего
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Предварительная проверка
+      options:
+        - label: Я проверил существующие Issues и Discussions.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую проблему решает предложение?
+      description: Опишите пользовательский сценарий, а не только желаемую кнопку или экран.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Предлагаемое решение
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы
+      description: Какие обходные пути или другие варианты вы рассматривали?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Область приложения
+      options:
+        - Питание и продукты
+        - Тренировки и упражнения
+        - Стратегия и расчёты
+        - Замеры и статистика
+        - Отчёты и работа с нейросетями
+        - Резервные копии и локальные данные
+        - Интерфейс и доступность
+        - Другое
+    validations:
+      required: true
