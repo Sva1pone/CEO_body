@@ -1,0 +1,198 @@
+@import "tailwindcss" source("../");
+
+@theme {
+  --font-sans: "Segoe UI Variable", "Segoe UI", sans-serif;
+  --color-violet-brand: #6d5dfc;
+  --color-violet-brand-dark: #4f3fe3;
+  --color-violet-brand-soft: #eeeafd;
+}
+
+@layer base {
+  :root {
+    color: #1d1a33;
+    background: #f7f6fb;
+    font-synthesis: none;
+    --violet: #6d5dfc;
+    --violet-dark: #4f3fe3;
+    --violet-soft: #eeeafd;
+    --pink: #f05f97;
+    --cyan: #20a8d0;
+    --ink: #1d1a33;
+    --muted: #77748a;
+    --line: #e8e5f0;
+    --card: #ffffff;
+    --shadow: 0 18px 52px rgba(58, 48, 101, 0.09);
+    --cinematic-canvas: #111a27;
+    --cinematic-sidebar: #152031;
+    --cinematic-surface-1: #1b293c;
+    --cinematic-surface-2: #22334a;
+    --cinematic-surface-3: #2c405c;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-width: 1280px;
+    min-height: 100vh;
+    margin: 0;
+    background:
+      radial-gradient(circle at 85% -10%, rgba(109, 93, 252, 0.11), transparent 28rem),
+      radial-gradient(circle at 20% 45%, rgba(32, 168, 208, 0.07), transparent 25rem),
+      #f8f7fc;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    color: inherit;
+  }
+
+  select {
+    color-scheme: dark;
+  }
+
+  select option,
+  select optgroup {
+    background: #1b293c;
+    color: #f4f7fb;
+  }
+
+  select option:disabled {
+    color: #8d9bae;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes workout-card-arrival {
+    0% {
+      opacity: 0.55;
+      transform: translateY(-10px) scale(0.985);
+    }
+    24% {
+      transform: translateX(-5px) scale(1.005);
+    }
+    42% {
+      transform: translateX(4px) scale(1.005);
+    }
+    60% {
+      transform: translateX(-2px);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+.cinematic-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #162235;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.cinematic-hero::after {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--hero-accent, #42a9ff), transparent);
+  box-shadow: 0 0 24px var(--hero-accent, #42a9ff);
+  content: "";
+}
+
+.cinematic-hero-backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: -36px;
+  background-position: center 38%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: blur(30px) saturate(0.72);
+  opacity: 0.28;
+  transform: scale(1.08);
+}
+
+.cinematic-hero-art {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-size: auto 100%;
+  background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 29%, rgba(0, 0, 0, 0.08) 36%, rgba(0, 0, 0, 0.55) 47%, #000 57%, #000 64%, rgba(0, 0, 0, 0.55) 71%, rgba(0, 0, 0, 0.08) 79%, transparent 86%);
+  mask-image: linear-gradient(90deg, transparent 29%, rgba(0, 0, 0, 0.08) 36%, rgba(0, 0, 0, 0.55) 47%, #000 57%, #000 64%, rgba(0, 0, 0, 0.55) 71%, rgba(0, 0, 0, 0.08) 79%, transparent 86%);
+}
+
+.cinematic-hero-fade {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background:
+    linear-gradient(90deg, #162235 0%, rgba(22, 34, 53, 0.99) 35%, rgba(22, 34, 53, 0.92) 40%, rgba(22, 34, 53, 0.72) 46%, rgba(22, 34, 53, 0.38) 53%, rgba(22, 34, 53, 0.06) 60%, rgba(22, 34, 53, 0.3) 68%, rgba(22, 34, 53, 0.7) 75%, rgba(22, 34, 53, 0.96) 82%, #162235 91%),
+    linear-gradient(180deg, rgba(22, 34, 53, 0.18), transparent 52%, rgba(22, 34, 53, 0.48));
+  pointer-events: none;
+}
+
+.cinematic-hero > :not(.cinematic-hero-backdrop, .cinematic-hero-art, .cinematic-hero-fade) {
+  position: relative;
+  z-index: 3;
+}
+
+.cinematic {
+  --ink: #f4f7fb;
+  --muted: #c8d1de;
+  --line: rgba(255, 255, 255, 0.12);
+  --card: #1b293c;
+  --shadow: 0 20px 58px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.025);
+    box-shadow: 0 18px 58px rgba(109, 93, 252, 0.27);
+  }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.97);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes beacon {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.72);
+  }
+}
+
+@keyframes exerciseGapOpen {
+  from {
+    opacity: 0;
+    transform: scaleY(0.94);
+  }
+}

@@ -1,0 +1,37 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.uv-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# JavaScript
+node_modules/
+static/dist/
+npm-debug.log*
+playwright-report/
+test-results/
+
+# Runtime data
+logs/
+data/
+static/uploads/
+*.log
+
+# Local tooling
+.codex/
+.specsmd/
+.specs-fire/
+.idea/
+.local/
+
+# Environment and OS
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
