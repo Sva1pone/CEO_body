@@ -26,6 +26,10 @@ static/uploads/
 .codex/
 .specsmd/
 .specs-fire/
+specs.md
+specs/
+reviews/
+labs/
 .idea/
 .local/
 
