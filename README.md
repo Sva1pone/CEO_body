@@ -73,7 +73,7 @@ Docker для локального запуска не требуется.
 ### Установка
 
 ```powershell
-git clone git@github.com:Sva1pone/CEO_body.git
+git clone https://github.com/Sva1pone/CEO_body.git
 cd CEO_body
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
