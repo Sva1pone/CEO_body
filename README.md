@@ -7,13 +7,14 @@
   <img alt="Tailwind CSS 4" src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-local--first-003B57?logo=sqlite&logoColor=white">
   <img alt="Tests" src="https://img.shields.io/badge/tests-58_unit_%2B_46_E2E-22C55E">
+  <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-F7DF1E">
 </p>
 
 «СЕО тела» — локальное веб-приложение для ведения питания, тренировок, активности, сна, замеров и динамики веса. Оно помогает собрать ежедневные показатели в одном месте, оценивать энергетический баланс и наблюдать изменения на длинной дистанции.
 
 Приложение рассчитано на одного пользователя и работает на его компьютере. Учётные записи, облачный сервер и обязательные внешние сервисы не нужны: интерфейс открывается в браузере, Flask обслуживает API, а данные хранятся в локальной SQLite.
 
-![Первый запуск с пустым профилем](assets/readme/empty-profile.png)
+![Главная страница приложения](assets/readme/dashboard.png)
 
 ## Содержание
 
@@ -27,6 +28,7 @@
 - [Проверки](#проверки)
 - [Использование ИИ-агентов при разработке](#использование-ии-агентов-при-разработке)
 - [Ограничения](#ограничения)
+- [Лицензия](#лицензия)
 
 ## Возможности
 
@@ -71,11 +73,11 @@ Docker для локального запуска не требуется.
 ### Установка
 
 ```powershell
-git clone <адрес-репозитория>
-cd recomposition_4_0
+git clone git@github.com:Sva1pone/CEO_body.git
+cd CEO_body
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
-npm install
+npm ci
 npm run build
 ```
 
@@ -197,3 +199,7 @@ npx playwright install chromium
 - приложение не заменяет врача, тренера или специалиста по питанию.
 
 Перед значимыми изменениями питания, нагрузки или лечения учитывайте состояние здоровья и рекомендации профильного специалиста.
+
+## Лицензия
+
+Проект распространяется по лицензии [MIT](LICENSE). Copyright © 2026 Sva1pone.
