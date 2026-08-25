@@ -29,8 +29,8 @@ test("latest report response wins after a faster refresh", async ({ page }) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
-        start: first ? "2026-01-01" : "2026-02-01",
-        end: first ? "2026-01-31" : "2026-02-28",
+        start: first ? "2035-01-01" : "2035-02-01",
+        end: first ? "2035-01-31" : "2035-02-28",
         global_balance: first ? 101 : 202,
         latest_measurement: null,
         days: [],
@@ -39,11 +39,11 @@ test("latest report response wins after a faster refresh", async ({ page }) => {
   });
 
   await page.goto("/report");
-  await page.getByLabel("С").fill("2026-02-01");
-  await page.getByLabel("По").fill("2026-02-28");
+  await page.getByLabel("С").fill("2035-02-01");
+  await page.getByLabel("По").fill("2035-02-28");
   await page.getByRole("button", { name: "Обновить" }).click();
 
-  await expect(page.getByText("Глобальный счёт на 2026-02-28:")).toBeVisible();
+  await expect(page.getByText("Глобальный счёт на 2035-02-28:")).toBeVisible();
   await expect(page.getByText("202 ккал")).toBeVisible();
 });
 

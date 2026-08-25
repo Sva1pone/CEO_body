@@ -42,7 +42,7 @@ class WorkoutExerciseSelectionTests(unittest.TestCase):
         with application.db() as connection:
             catalog = connection.execute(
                 "INSERT INTO exercise_catalog(name, muscle_group, created_at) VALUES (?, ?, ?)",
-                ("Синтетическое упражнение X", "Ноги", "2030-01-01T00:00:00"),
+                ("Синтетическое упражнение X", "Тестовая группа", "2030-01-01T00:00:00"),
             )
             connection.executemany(
                 "INSERT INTO workout_template_exercises(template_id, exercise_name, sort_order) VALUES (?, ?, ?)",
@@ -62,7 +62,7 @@ class WorkoutExerciseSelectionTests(unittest.TestCase):
         matching = [
             item
             for item in details["available_exercises"]
-            if "Болгар" in item["name"]
+            if "Синтетическое упражнение" in item["name"]
         ]
         available_names = {
             item["name"] for item in details["available_exercises"]

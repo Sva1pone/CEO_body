@@ -54,11 +54,15 @@ class WeightTrendApiTest(unittest.TestCase):
         self.assertEqual(closed.status_code, 200)
 
     def test_weight_trend_reads_history_without_writing_to_database(self) -> None:
+        with application.db() as connection:
+            connection.execute(
+                "UPDATE measurements SET weight=137.75 WHERE measured_on='2030-01-01'"
+            )
         self.close_day_with_food("2030-01-02", "weight-trend-1")
         self.close_day_with_food("2030-01-09", "weight-trend-2")
         self.close_day_with_food("2030-01-18", "weight-trend-3")
-        self.client.post("/api/progress", json={"measured_on": "2030-01-09", "weight": 137.8})
-        self.client.post("/api/progress", json={"measured_on": "2030-01-18", "weight": 137.5})
+        self.client.post("/api/progress", json={"measured_on": "2030-01-09", "weight": 137.55})
+        self.client.post("/api/progress", json={"measured_on": "2030-01-18", "weight": 137.25})
 
         with application.db() as connection:
             before = {
