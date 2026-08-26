@@ -39,6 +39,15 @@ export default function ProgressPage() {
     load();
   }, []);
   useEffect(() => {
+    if (!data?.measurement_fields) return;
+    setForm((current) => ({
+      ...Object.fromEntries(
+        data.measurement_fields.map((field) => [field.slug, current[field.slug] ?? ""]),
+      ),
+      ...current,
+    }));
+  }, [data?.measurement_fields]);
+  useEffect(() => {
     if (!formOpen) return undefined;
 
     function closeOnEscape(event) {
@@ -195,14 +204,11 @@ export default function ProgressPage() {
                 />
               </label>
               {[
-                ["weight", "Вес, кг"],
-                ["waist", "Талия, см"],
-                ["belly", "Живот, см"],
-                ["shoulders", "Плечи, см"],
-                ["biceps", "Бицепс, см"],
-              ].map(([key, label]) => (
+                { slug: "weight", name: "Вес", unit: "кг" },
+                ...(data.measurement_fields || []),
+              ].map(({ slug: key, name, unit }) => (
                 <label className={FIELD_LABEL_CLASSES} key={key}>
-                  {label}
+                  {name}, {unit}
                   <input
                     className={FIELD_CLASSES}
                     type="number"

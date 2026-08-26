@@ -1,4 +1,7 @@
 MISSING_COLUMNS = {
+    "measurements": {
+        "record_type": "TEXT NOT NULL DEFAULT 'mixed' CHECK(record_type IN ('weight', 'tape', 'mixed'))",
+    },
     "food_entries": {
         "meal_type": "TEXT NOT NULL DEFAULT 'Завтрак'",
         "request_token": "TEXT",
@@ -71,6 +74,14 @@ def apply_schema_updates(connect) -> None:
             """CREATE UNIQUE INDEX IF NOT EXISTS idx_food_entries_request_token
                ON food_entries(request_token)
                WHERE request_token IS NOT NULL"""
+        )
+        connection.execute(
+            """CREATE INDEX IF NOT EXISTS idx_body_measurement_fields_active_order
+               ON body_measurement_fields(active, sort_order, id)"""
+        )
+        connection.execute(
+            """CREATE INDEX IF NOT EXISTS idx_body_measurement_values_field
+               ON body_measurement_values(field_id, measurement_id)"""
         )
         _normalize_workout_set_numbers(connection)
         connection.execute(

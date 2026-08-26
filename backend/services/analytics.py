@@ -13,10 +13,13 @@ from backend.services.days import (
     workout_session_kcal,
 )
 from backend.services.runtime import db, serialize_sleep
-from backend.services.strategy import (
-    measurement_values_from_payload,
-    validate_date_range,
+from backend.services.body_measurements import (
+    get_body_measurement_fields,
+    get_measurements,
+    save_legacy_measurement,
+    serialize_measurement,
 )
+from backend.services.strategy import validate_date_range
 from backend.services.workouts import cardio_interval_kcal
 
 
@@ -204,7 +207,7 @@ def get_report(start: str, end: str) -> dict:
             "end": end,
             "days": report_days,
             "aggregate": aggregate,
-            "latest_measurement": dict(latest_measurement) if latest_measurement else None,
+            "latest_measurement": serialize_measurement(connection, latest_measurement),
             "global_balance": round(global_balance_at_end, 1),
         }
 
@@ -780,21 +783,13 @@ def get_progress() -> dict:
         for row in records
     ]
     return {
-        "measurements": [dict(row) for row in measurements],
+        "measurements": get_measurements(),
+        "measurement_fields": get_body_measurement_fields(),
         "records": record_payloads,
         "workouts": [dict(row) for row in workouts],
     }
 
 
 def add_measurement(payload: dict) -> dict:
-    measured_on, fields, values, note = measurement_values_from_payload(payload)
-
-    with db() as connection:
-        AnalyticsRepository(connection).add_measurement(
-            measured_on,
-            fields,
-            values,
-            note,
-        )
-
+    save_legacy_measurement(payload)
     return get_progress()

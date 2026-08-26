@@ -97,7 +97,7 @@ class FreshDatabaseInitializationTests(unittest.TestCase):
                         row["key"]
                         for row in connection.execute("SELECT key FROM settings")
                     }
-                    self.assertEqual(markers, set())
+                    self.assertEqual(markers, {"body_measurements_v1"})
                     product_id = connection.execute(
                         """INSERT INTO products(
                                name, category, serving_label, serving_grams, serving_units,

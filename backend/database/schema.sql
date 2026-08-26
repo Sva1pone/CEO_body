@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS food_entries (
 CREATE TABLE IF NOT EXISTS measurements (
     id INTEGER PRIMARY KEY,
     measured_on TEXT NOT NULL,
+    record_type TEXT NOT NULL DEFAULT 'mixed' CHECK(record_type IN ('weight', 'tape', 'mixed')),
     weight REAL,
     waist REAL,
     belly REAL,
@@ -135,6 +136,29 @@ CREATE TABLE IF NOT EXISTS measurements (
     thigh REAL,
     note TEXT
 );
+
+CREATE TABLE IF NOT EXISTS body_measurement_fields (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    unit TEXT NOT NULL DEFAULT 'см',
+    sort_order INTEGER NOT NULL DEFAULT 100,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS body_measurement_values (
+    measurement_id INTEGER NOT NULL REFERENCES measurements(id) ON DELETE CASCADE,
+    field_id INTEGER NOT NULL REFERENCES body_measurement_fields(id),
+    value REAL NOT NULL,
+    PRIMARY KEY(measurement_id, field_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_body_measurement_fields_active_order
+ON body_measurement_fields(active, sort_order, id);
+
+CREATE INDEX IF NOT EXISTS idx_body_measurement_values_field
+ON body_measurement_values(field_id, measurement_id);
 
 CREATE TABLE IF NOT EXISTS workouts (
     id INTEGER PRIMARY KEY,

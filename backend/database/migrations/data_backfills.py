@@ -6,6 +6,64 @@ from backend.services.days import day_summary
 from backend.services.runtime import db
 
 
+STANDARD_BODY_MEASUREMENT_FIELDS = (
+    ("Талия", "waist", 10),
+    ("Живот", "belly", 20),
+    ("Плечи", "shoulders", 30),
+    ("Бицепс", "biceps", 40),
+    ("Грудь", "chest", 50),
+    ("Бёдра", "hips", 60),
+    ("Бедро", "thigh", 70),
+)
+
+
+def backfill_body_measurements() -> None:
+    with db() as connection:
+        created_at = datetime.now().isoformat(timespec="seconds")
+        connection.executemany(
+            """INSERT OR IGNORE INTO body_measurement_fields(
+                   name, slug, unit, sort_order, active, created_at
+               ) VALUES (?, ?, 'см', ?, 1, ?)""",
+            [
+                (name, slug, sort_order, created_at)
+                for name, slug, sort_order in STANDARD_BODY_MEASUREMENT_FIELDS
+            ],
+        )
+
+        migrated = connection.execute(
+            "SELECT 1 FROM settings WHERE key='body_measurements_v1'"
+        ).fetchone()
+        if migrated:
+            return
+
+        for _, slug, _ in STANDARD_BODY_MEASUREMENT_FIELDS:
+            connection.execute(
+                f"""INSERT OR IGNORE INTO body_measurement_values(measurement_id, field_id, value)
+                    SELECT m.id, f.id, m.{slug}
+                    FROM measurements m
+                    JOIN body_measurement_fields f ON f.slug=?
+                    WHERE m.{slug} IS NOT NULL""",
+                (slug,),
+            )
+
+        tape_presence = " OR ".join(
+            f"{slug} IS NOT NULL" for _, slug, _ in STANDARD_BODY_MEASUREMENT_FIELDS
+        )
+        connection.execute(
+            f"""UPDATE measurements
+                SET record_type=CASE
+                    WHEN weight IS NOT NULL AND ({tape_presence}) THEN 'mixed'
+                    WHEN weight IS NOT NULL THEN 'weight'
+                    WHEN {tape_presence} THEN 'tape'
+                    ELSE 'mixed'
+                END"""
+        )
+        connection.execute(
+            "INSERT INTO settings(key, value) VALUES ('body_measurements_v1', ?)",
+            (created_at,),
+        )
+
+
 def migrate_exercise_subgroups() -> None:
     """Rename the legacy fallback and recreate it only for genuinely orphaned rows."""
     with db() as connection:
