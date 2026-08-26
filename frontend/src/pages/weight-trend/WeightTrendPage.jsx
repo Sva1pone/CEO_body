@@ -1,14 +1,26 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, FlaskConical, Scale } from "lucide-react";
 
 import { api } from "../../shared/api";
 import { format } from "../../shared/format";
 import { ErrorState, Loading, Shell } from "../../shared/ui";
+import {
+  DATE_RANGE_STORAGE_KEYS,
+  isValidDateRange,
+  usePersistedDateRange,
+} from "../../shared/usePersistedDateRange";
 
 const CARD_CLASSES =
   "min-w-0 rounded-[22px] border border-[#65a5e2]/20 bg-[linear-gradient(145deg,rgba(20,29,45,0.97),rgba(8,13,23,0.97))] p-6 shadow-[0_18px_48px_rgba(0,0,0,0.2)]";
 const FIELD_CLASSES =
   "min-h-12 rounded-xl border border-white/14 bg-[#171f2e] px-3 text-sm text-white outline-none [color-scheme:dark] focus:border-[#71b9ff]/70 focus:shadow-[0_0_0_4px_rgba(66,169,255,0.1)]";
+
+function createDefaultWeightTrendRange() {
+  const today = new Date().toISOString().slice(0, 10);
+  const initialStart = new Date();
+  initialStart.setDate(initialStart.getDate() - 179);
+  return { start: initialStart.toISOString().slice(0, 10), end: today };
+}
 
 function signed(value, digits = 2) {
   const number = Number(value || 0);
@@ -180,37 +192,40 @@ function WeightChart({ points }) {
 }
 
 export default function WeightTrendPage() {
-  const today = new Date().toISOString().slice(0, 10);
-  const initialStart = new Date();
-  initialStart.setDate(initialStart.getDate() - 179);
-  const [range, setRange] = useState({
-    start: initialStart.toISOString().slice(0, 10),
-    end: today,
-  });
+  const { range, setRange, saveRange } = usePersistedDateRange(
+    DATE_RANGE_STORAGE_KEYS.weightTrend,
+    createDefaultWeightTrendRange,
+  );
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [requestedRange, setRequestedRange] = useState(range);
+  const latestRequest = useRef(0);
 
-  const load = async () => {
+  const load = async (loadedRange = requestedRange) => {
+    if (!isValidDateRange(loadedRange)) return;
+    const requestId = ++latestRequest.current;
     setError("");
     try {
       const result = await api(
-        `/api/weight-trend?start=${requestedRange.start}&end=${requestedRange.end}`,
+        `/api/weight-trend?start=${loadedRange.start}&end=${loadedRange.end}`,
       );
-      setData(result);
+      if (requestId === latestRequest.current) {
+        setData(result);
+        saveRange(loadedRange);
+      }
     } catch (reason) {
-      setError(reason.message);
+      if (requestId === latestRequest.current) setError(reason.message);
     }
   };
 
   useEffect(() => {
-    load();
+    load(requestedRange);
   }, [requestedRange.start, requestedRange.end]);
 
   if (error && !data)
     return (
       <Shell active="weight-trend" cinematic>
-        <ErrorState error={error} retry={load} />
+        <ErrorState error={error} retry={() => load(requestedRange)} />
       </Shell>
     );
   if (!data)
@@ -248,7 +263,7 @@ export default function WeightTrendPage() {
           className={`${CARD_CLASSES} flex flex-wrap items-end gap-4`}
           onSubmit={(event) => {
             event.preventDefault();
-            setRequestedRange(range);
+            if (isValidDateRange(range)) setRequestedRange(range);
           }}
         >
           <label className="grid gap-2 text-sm font-bold text-[#c9d5e4]">
@@ -257,6 +272,7 @@ export default function WeightTrendPage() {
               className={FIELD_CLASSES}
               type="date"
               value={range.start}
+              max={range.end || undefined}
               onChange={(event) =>
                 setRange({ ...range, start: event.target.value })
               }
@@ -269,6 +285,7 @@ export default function WeightTrendPage() {
               className={FIELD_CLASSES}
               type="date"
               value={range.end}
+              min={range.start || undefined}
               onChange={(event) =>
                 setRange({ ...range, end: event.target.value })
               }

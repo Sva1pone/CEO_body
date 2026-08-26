@@ -4,6 +4,11 @@ import { BarChart3, HelpCircle } from "lucide-react";
 import { api } from "../../shared/api";
 import { format } from "../../shared/format";
 import {
+  DATE_RANGE_STORAGE_KEYS,
+  isValidDateRange,
+  usePersistedDateRange,
+} from "../../shared/usePersistedDateRange";
+import {
   CinematicHeroArt,
   ErrorState,
   Loading,
@@ -16,6 +21,13 @@ const STATS_CARD_CLASSES =
   "min-w-0 overflow-hidden rounded-[22px] border border-[#65a5e2]/20 bg-[linear-gradient(145deg,rgba(20,29,45,0.97),rgba(8,13,23,0.97))] p-6 shadow-[0_18px_48px_rgba(0,0,0,0.2)]";
 const FIELD_CLASSES =
   "min-h-12 w-full rounded-xl border border-white/14 bg-[#171f2e] px-3 text-sm text-white outline-none [color-scheme:dark] focus:border-[#71b9ff]/70 focus:shadow-[0_0_0_4px_rgba(66,169,255,0.1)]";
+
+function createDefaultStatisticsRange() {
+  const today = new Date().toISOString().slice(0, 10);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 89);
+  return { start: startDate.toISOString().slice(0, 10), end: today };
+}
 
 function BalanceChart({ points }) {
   if (!points?.length)
@@ -298,25 +310,26 @@ function TrainingStatistics({ training }) {
 }
 
 export default function StatisticsPage() {
-  const today = new Date().toISOString().slice(0, 10);
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 89);
-  const [range, setRange] = useState({
-    start: startDate.toISOString().slice(0, 10),
-    end: today,
-  });
+  const { range, setRange, saveRange } = usePersistedDateRange(
+    DATE_RANGE_STORAGE_KEYS.statistics,
+    createDefaultStatisticsRange,
+  );
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [productMode, setProductMode] = useState("popular");
   const latestRequest = useRef(0);
-  const load = async () => {
+  const load = async (requestedRange = range) => {
+    if (!isValidDateRange(requestedRange)) return;
     const requestId = ++latestRequest.current;
     setError("");
     try {
       const result = await api(
-        `/api/statistics?start=${range.start}&end=${range.end}`,
+        `/api/statistics?start=${requestedRange.start}&end=${requestedRange.end}`,
       );
-      if (requestId === latestRequest.current) setData(result);
+      if (requestId === latestRequest.current) {
+        setData(result);
+        saveRange(requestedRange);
+      }
     } catch (reason) {
       if (requestId === latestRequest.current) setError(reason.message);
     }
@@ -327,7 +340,7 @@ export default function StatisticsPage() {
   if (error && !data)
     return (
       <Shell active="statistics" cinematic>
-        <ErrorState error={error} retry={load} />
+        <ErrorState error={error} retry={() => load()} />
       </Shell>
     );
   if (!data)
@@ -367,7 +380,7 @@ export default function StatisticsPage() {
             className="grid min-w-[430px] grid-cols-2 gap-3 rounded-[18px] border border-white/10 bg-[#050a13]/70 p-4 backdrop-blur-xl"
             onSubmit={(event) => {
               event.preventDefault();
-              load();
+              load(range);
             }}
           >
             <label className="grid gap-2 text-xs font-black tracking-[0.08em] text-[#9eacc0] uppercase">
@@ -376,9 +389,11 @@ export default function StatisticsPage() {
                 className={FIELD_CLASSES}
                 type="date"
                 value={range.start}
+                max={range.end || undefined}
                 onChange={(event) =>
                   setRange({ ...range, start: event.target.value })
                 }
+                required
               />
             </label>
             <label className="grid gap-2 text-xs font-black tracking-[0.08em] text-[#9eacc0] uppercase">
@@ -387,9 +402,11 @@ export default function StatisticsPage() {
                 className={FIELD_CLASSES}
                 type="date"
                 value={range.end}
+                min={range.start || undefined}
                 onChange={(event) =>
                   setRange({ ...range, end: event.target.value })
                 }
+                required
               />
             </label>
             <button className="col-span-2 inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-[#5a8ef1]/65 bg-[#5a8ef1]/18 px-5 text-sm font-black text-[#c8e5ff] transition-[transform,background-color] hover:-translate-y-0.5 hover:bg-[#5a8ef1]/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71b9ff] active:scale-[0.97]">Пересчитать</button>

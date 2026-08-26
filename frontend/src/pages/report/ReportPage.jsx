@@ -15,6 +15,11 @@ import {
 import { api } from "../../shared/api";
 import { format, formatDuration } from "../../shared/format";
 import {
+  DATE_RANGE_STORAGE_KEYS,
+  isValidDateRange,
+  usePersistedDateRange,
+} from "../../shared/usePersistedDateRange";
+import {
   CategoryIcon,
   CinematicHeroArt,
   ErrorState,
@@ -27,6 +32,11 @@ const FIELD_CLASSES =
   "min-h-12 min-w-[180px] rounded-xl border border-white/14 bg-white/[0.08] px-3.5 text-sm text-white outline-none [color-scheme:dark] focus:border-[#71b9ff]/70 focus:shadow-[0_0_0_4px_rgba(66,169,255,0.1)]";
 const ACTION_BUTTON_CLASSES =
   "inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/14 bg-white/[0.065] px-4 text-sm font-extrabold text-[#d9dfea] transition-[transform,background-color,border-color,color] hover:-translate-y-0.5 hover:border-[#58b5ff]/55 hover:bg-[#42a9ff]/14 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71b9ff] active:scale-[0.96]";
+
+function createDefaultReportRange() {
+  const today = new Date().toISOString().slice(0, 10);
+  return { start: `${today.slice(0, 8)}01`, end: today };
+}
 
 function buildReportMarkdown(report) {
   const lines = [
@@ -100,20 +110,27 @@ function buildReportMarkdown(report) {
 }
 
 export default function ReportPage() {
-  const today = new Date().toISOString().slice(0, 10);
-  const monthStart = `${today.slice(0, 8)}01`;
-  const [range, setRange] = useState({ start: monthStart, end: today });
+  const { range, setRange, saveRange } = usePersistedDateRange(
+    DATE_RANGE_STORAGE_KEYS.report,
+    createDefaultReportRange,
+  );
   const [report, setReport] = useState(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
   const latestRequest = useRef(0);
-  const load = async () => {
+  const load = async (requestedRange = range) => {
+    if (!isValidDateRange(requestedRange)) return;
     const requestId = ++latestRequest.current;
     setError("");
     try {
-      const result = await api(`/api/report?start=${range.start}&end=${range.end}`);
-      if (requestId === latestRequest.current) setReport(result);
+      const result = await api(
+        `/api/report?start=${requestedRange.start}&end=${requestedRange.end}`,
+      );
+      if (requestId === latestRequest.current) {
+        setReport(result);
+        saveRange(requestedRange);
+      }
     } catch (reason) {
       if (requestId === latestRequest.current) setError(reason.message);
     }
@@ -124,7 +141,7 @@ export default function ReportPage() {
   if (error)
     return (
       <Shell active="report" cinematic>
-        <ErrorState error={error} retry={load} />
+        <ErrorState error={error} retry={() => load()} />
       </Shell>
     );
   if (!report)
@@ -193,16 +210,24 @@ export default function ReportPage() {
           </div>
           <Sparkles className="relative z-1 text-[#9186ff] drop-shadow-[0_0_28px_rgba(109,93,252,0.6)]" size={78} />
         </header>
-        <section className="flex flex-wrap items-end gap-3 py-1">
+        <form
+          className="flex flex-wrap items-end gap-3 py-1"
+          onSubmit={(event) => {
+            event.preventDefault();
+            load(range);
+          }}
+        >
           <label className="grid gap-2 text-xs font-black text-[#b9bfcc] uppercase">
             С
             <input
               className={FIELD_CLASSES}
               type="date"
               value={range.start}
+              max={range.end || undefined}
               onChange={(event) =>
                 setRange({ ...range, start: event.target.value })
               }
+              required
             />
           </label>
           <label className="grid gap-2 text-xs font-black text-[#b9bfcc] uppercase">
@@ -211,27 +236,34 @@ export default function ReportPage() {
               className={FIELD_CLASSES}
               type="date"
               value={range.end}
+              min={range.start || undefined}
               onChange={(event) =>
                 setRange({ ...range, end: event.target.value })
               }
+              required
             />
           </label>
-          <button className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-[#7c6dff] bg-[#6d5dfc]/20 px-5 text-sm font-black text-[#d8d3ff] transition-[transform,background-color] hover:-translate-y-0.5 hover:bg-[#6d5dfc]/28 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9b91ff] active:scale-[0.96]" onClick={load}>
+          <button className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-[#7c6dff] bg-[#6d5dfc]/20 px-5 text-sm font-black text-[#d8d3ff] transition-[transform,background-color] hover:-translate-y-0.5 hover:bg-[#6d5dfc]/28 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9b91ff] active:scale-[0.96]">
             Обновить
           </button>
           <span className="ml-auto flex flex-wrap items-center gap-2">
             <button
+              type="button"
               className={`${ACTION_BUTTON_CLASSES} ${copied ? "border-[#4ada97]/50 bg-[#4ada97]/12 text-[#9af1c9]" : ""}`}
               onClick={copyReport}
             >
               {copied ? <Check size={17} /> : <Copy size={17} />}
               {copied ? "Скопировано" : "Для LLM"}
             </button>
-            <button className={ACTION_BUTTON_CLASSES} onClick={downloadReport}>
+            <button
+              type="button"
+              className={ACTION_BUTTON_CLASSES}
+              onClick={downloadReport}
+            >
               <Download size={17} /> Скачать .md
             </button>
           </span>
-        </section>
+        </form>
         {copyError && <p className="m-0 text-sm text-[#ffb5c8]">{copyError}</p>}
         <section className="grid grid-cols-3 gap-3">
           <MetricCard
