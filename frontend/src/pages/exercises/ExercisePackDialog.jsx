@@ -70,6 +70,8 @@ function formatBytes(bytes) {
 }
 
 export default function ExercisePackDialog({ data, onClose, onImported }) {
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
   const [tab, setTab] = useState("export");
   const [selection, setSelection] = useState(() => selectionState(data));
   const [includeImages, setIncludeImages] = useState(false);
@@ -108,11 +110,30 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
     return () => clearTimeout(timer);
   }, [payload, tab]);
   useEffect(() => {
+    const previousFocus = document.activeElement;
+    closeButtonRef.current?.focus();
     function closeOnEscape(event) {
       if (event.key === "Escape") onClose();
+      if (event.key !== "Tab") return;
+      const controls = dialogRef.current?.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex="0"]',
+      );
+      if (!controls?.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
     document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      previousFocus?.focus();
+    };
   }, [onClose]);
 
   function setChildren(subgroupIds, checked) {
@@ -249,14 +270,14 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
   const allChecked = selectableCount > 0 && selectedCount === selectableCount;
   const allIndeterminate = selectedCount > 0 && !allChecked;
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-[#02050b]/85 p-4 backdrop-blur-md">
-      <section className="my-auto w-full max-w-[820px] rounded-3xl border border-white/12 bg-[linear-gradient(145deg,#171d2d,#090e18)] p-6 text-white shadow-[0_38px_100px_rgba(0,0,0,0.58)]" role="dialog" aria-modal="true" aria-labelledby="exercise-pack-title">
+    <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto overscroll-contain bg-[#02050b]/85 p-4 backdrop-blur-md">
+      <section ref={dialogRef} className="my-auto w-full max-w-[820px] rounded-3xl border border-white/12 bg-[linear-gradient(145deg,#171d2d,#090e18)] p-6 text-white shadow-[0_38px_100px_rgba(0,0,0,0.58)]" role="dialog" aria-modal="true" aria-labelledby="exercise-pack-title">
         <header className="flex items-start justify-between gap-4">
           <div>
             <p className="m-0 text-xs font-extrabold tracking-[0.1em] text-[#8dcdff] uppercase">Переносимый каталог</p>
             <h2 id="exercise-pack-title" className="my-2 text-3xl font-black tracking-[-0.04em]">Паки упражнений</h2>
           </div>
-          <button type="button" className="grid size-11 cursor-pointer place-items-center rounded-xl border border-white/12 bg-white/[0.05]" aria-label="Закрыть" onClick={onClose}><X /></button>
+          <button ref={closeButtonRef} type="button" className="grid size-11 cursor-pointer place-items-center rounded-xl border border-white/12 bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71b9ff]" aria-label="Закрыть" onClick={onClose}><X aria-hidden="true" /></button>
         </header>
         <div className="my-4 grid grid-cols-2 gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1.5">
           {[['export', 'Экспорт'], ['import', 'Импорт']].map(([value, label]) => (
@@ -403,10 +424,10 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
                 <button type="button" className={BUTTON} disabled={busy} onClick={importPack}><PackageOpen size={17} />{busy ? "Импортирую…" : "Импортировать целиком"}</button>
               </div>
             )}
-            {result && <p className="m-0 rounded-xl border border-[#74d89b]/30 bg-[#4bc97d]/10 px-4 py-3 text-sm text-[#baf1ce]">Готово: создано {result.created}, обновлено {result.updated}, пропущено {result.skipped}, ошибок {result.errors.length}.</p>}
+            {result && <p className="m-0 rounded-xl border border-[#74d89b]/30 bg-[#4bc97d]/10 px-4 py-3 text-sm text-[#baf1ce]" role="status">Готово: создано {result.created}, обновлено {result.updated}, пропущено {result.skipped}, ошибок {result.errors.length}.</p>}
           </div>
         )}
-        {error && <p className="mt-4 mb-0 rounded-xl border border-[#ff7699]/25 bg-[#ff7699]/10 px-3 py-2.5 text-sm text-[#ffb5c8]">{error}</p>}
+        {error && <p className="mt-4 mb-0 rounded-xl border border-[#ff7699]/25 bg-[#ff7699]/10 px-3 py-2.5 text-sm text-[#ffb5c8]" role="alert">{error}</p>}
       </section>
     </div>
   );
