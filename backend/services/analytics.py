@@ -764,29 +764,9 @@ def build_training_statistics(workout_rows, strength_rows, cardio_rows) -> dict:
 
 
 def get_progress() -> dict:
-    with db() as connection:
-        measurements, records, repetition_records, workouts = AnalyticsRepository(
-            connection
-        ).progress_data()
-
-    repetitions_by_exercise: dict[str, list[dict]] = {}
-    for row in repetition_records:
-        repetitions_by_exercise.setdefault(row["exercise"], []).append(
-            {"weight": row["weight"], "reps": row["max_reps"]}
-        )
-
-    record_payloads = [
-        {
-            **dict(row),
-            "rep_records": repetitions_by_exercise.get(row["exercise"], []),
-        }
-        for row in records
-    ]
     return {
         "measurements": get_measurements(),
         "measurement_fields": get_body_measurement_fields(),
-        "records": record_payloads,
-        "workouts": [dict(row) for row in workouts],
     }
 
 

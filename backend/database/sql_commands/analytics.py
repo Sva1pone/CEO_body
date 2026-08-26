@@ -166,31 +166,6 @@ class AnalyticsRepository:
         ).fetchall()
         return measurements, closed_days
 
-    def progress_data(self) -> tuple:
-        measurements = self.connection.execute(
-            "SELECT * FROM measurements ORDER BY measured_on DESC, id DESC"
-        ).fetchall()
-        records = self.connection.execute(
-            """SELECT exercise, MAX(weight) AS max_weight,
-                      MAX(weight * (1 + reps / 30.0)) AS estimated_1rm,
-                      MAX(reps) AS max_reps
-               FROM workout_sets
-               WHERE COALESCE(is_warmup, 0)=0 AND weight>0 AND reps>0
-               GROUP BY exercise ORDER BY estimated_1rm DESC"""
-        ).fetchall()
-        repetition_records = self.connection.execute(
-            """SELECT exercise, weight, MAX(reps) AS max_reps
-               FROM workout_sets
-               WHERE COALESCE(is_warmup, 0)=0 AND weight>0 AND reps>0
-               GROUP BY exercise, weight
-               ORDER BY exercise COLLATE NOCASE, weight DESC"""
-        ).fetchall()
-        workouts = self.connection.execute(
-            """SELECT w.*, d.log_date FROM workouts w JOIN days d ON d.id=w.day_id
-               ORDER BY d.log_date DESC, w.id DESC LIMIT 20"""
-        ).fetchall()
-        return measurements, records, repetition_records, workouts
-
     def add_measurement(
         self, measured_on: str, fields: list[str], values: list, note: str
     ) -> None:

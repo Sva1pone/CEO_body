@@ -867,10 +867,7 @@ class BackendApiTest(unittest.TestCase):
         self.assertEqual(training["exercises"][0]["sets"], 2)
         self.assertTrue(training["muscles"])
         progress = self.client.get("/api/progress").get_json()
-        record = next(row for row in progress["records"] if row["exercise"] == exercise)
-        self.assertEqual(record["max_weight"], 100)
-        self.assertEqual(record["max_reps"], 10)
-        self.assertEqual(record["rep_records"], [{"weight": 100, "reps": 10}])
+        self.assertNotIn("records", progress)
         with application.db() as con:
             snapshots = con.execute(
                 "SELECT muscle_profile_snapshot FROM workout_sets WHERE workout_id=?",
