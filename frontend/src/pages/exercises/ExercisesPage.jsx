@@ -1,5 +1,5 @@
 import React from "react";
-import { Camera, Dumbbell, Plus, X } from "lucide-react";
+import { Camera, Dumbbell, PackageOpen, Plus, X } from "lucide-react";
 
 import MuscleMap from "../../shared/MuscleMap";
 import { IMAGE_ACCEPT } from "../../shared/imageUpload";
@@ -10,6 +10,7 @@ import {
   Shell,
 } from "../../shared/ui";
 import { useExerciseCatalog } from "./useExerciseCatalog";
+import ExercisePackDialog from "./ExercisePackDialog";
 
 const FORM_LABEL_CLASSES =
   "grid min-w-0 gap-2 text-sm font-extrabold text-[#c7cfdb]";
@@ -17,6 +18,7 @@ const FORM_CONTROL_CLASSES =
   "min-h-12 w-full rounded-xl border border-white/12 bg-white/[0.06] px-3.5 text-sm text-white outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[#707b8c] focus:border-[#71b9ff]/70 focus:bg-white/[0.09] focus:shadow-[0_0_0_4px_rgba(66,169,255,0.1)]";
 
 export default function ExercisesPage() {
+  const [packDialog, setPackDialog] = React.useState(false);
   const {
     data,
     error,
@@ -94,12 +96,21 @@ export default function ExercisesPage() {
               Сначала выбери тренировочный день, затем мышечную подгруппу.
             </p>
           </div>
-          <button
-            className="relative z-[2] inline-flex min-h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[13px] border border-[#7c6dff] bg-[linear-gradient(135deg,#7c6dff,#5c49ed)] px-5 text-sm font-extrabold text-white shadow-[0_10px_25px_rgba(109,93,252,0.27)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_15px_31px_rgba(109,93,252,0.36)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9b91ff] active:scale-[0.96]"
-            onClick={() => openEditor()}
-          >
-            <Plus size={18} /> Новое упражнение
-          </button>
+          <div className="relative z-[2] flex shrink-0 flex-col gap-2">
+            <button
+              className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[13px] border border-[#7c6dff] bg-[linear-gradient(135deg,#7c6dff,#5c49ed)] px-5 text-sm font-extrabold text-white shadow-[0_10px_25px_rgba(109,93,252,0.27)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_15px_31px_rgba(109,93,252,0.36)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9b91ff] active:scale-[0.96]"
+              onClick={() => openEditor()}
+            >
+              <Plus size={18} /> Новое упражнение
+            </button>
+            <button
+              type="button"
+              className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[13px] border border-white/15 bg-white/[0.07] px-4 text-sm font-extrabold text-[#e7ebf2] transition-colors hover:border-[#71b9ff]/50 hover:bg-[#42a9ff]/15 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71b9ff]"
+              onClick={() => setPackDialog(true)}
+            >
+              <PackageOpen size={17} /> Импорт и экспорт
+            </button>
+          </div>
         </header>
         {error && (
           <p className="my-3 rounded-xl border border-[#ff7699]/25 bg-[#ff7699]/10 px-3 py-2.5 text-sm leading-relaxed text-[#ffb5c8]">
@@ -400,6 +411,13 @@ export default function ExercisesPage() {
                 "мышцы не указаны"}
             </em>
           </div>
+        )}
+        {packDialog && (
+          <ExercisePackDialog
+            data={data}
+            onClose={() => setPackDialog(false)}
+            onImported={load}
+          />
         )}
         {editor && (
           <div

@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from flask import Blueprint, jsonify, request
+import io
+from datetime import datetime
+
+from flask import Blueprint, jsonify, request, send_file
+
+from backend.services.exercise_packs import (
+    build_exercise_pack,
+    import_exercise_pack,
+    preview_exercise_pack,
+)
 
 from backend.services.workout_operations import (
     WorkoutConflictError,
@@ -88,6 +97,58 @@ def api_workout_templates():
 @workout_routes.get("/api/exercises")
 def api_exercise_catalog():
     return jsonify(get_exercise_catalog())
+
+
+@workout_routes.post("/api/exercise-packs/export")
+def api_export_exercise_pack():
+    payload = request.get_json(silent=True) or {}
+    try:
+        content, _ = build_exercise_pack(
+            payload.get("selection"),
+            bool(payload.get("include_images")),
+        )
+    except ValueError as error:
+        return error_response(error, 400)
+    filename = f"ceo-body-exercises-{datetime.now():%Y-%m-%d}.ceopack.zip"
+    return send_file(
+        io.BytesIO(content),
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
+@workout_routes.post("/api/exercise-packs/summary")
+def api_exercise_pack_summary():
+    payload = request.get_json(silent=True) or {}
+    try:
+        _, summary = build_exercise_pack(
+            payload.get("selection"),
+            bool(payload.get("include_images")),
+        )
+    except ValueError as error:
+        return error_response(error, 400)
+    return jsonify(summary)
+
+
+@workout_routes.post("/api/exercise-packs/preview")
+def api_preview_exercise_pack():
+    try:
+        return jsonify(preview_exercise_pack(request.files.get("pack")))
+    except ValueError as error:
+        return error_response(error, 400)
+
+
+@workout_routes.post("/api/exercise-packs/import")
+def api_import_exercise_pack():
+    try:
+        result = import_exercise_pack(
+            request.files.get("pack"),
+            (request.form.get("policy") or "").strip(),
+        )
+    except ValueError as error:
+        return error_response(error, 400)
+    return jsonify(result)
 
 
 @workout_routes.post("/api/exercises")
