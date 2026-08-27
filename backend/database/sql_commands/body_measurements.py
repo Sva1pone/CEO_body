@@ -118,3 +118,9 @@ class BodyMeasurementRepository:
                    ON CONFLICT(measurement_id, field_id) DO UPDATE SET value=excluded.value""",
                 (measurement_id, field_id, value),
             )
+
+    def clear_values(self, measurement_id: int) -> None:
+        self.connection.execute(
+            "DELETE FROM body_measurement_values WHERE measurement_id=?",
+            (measurement_id,),
+        )

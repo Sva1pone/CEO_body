@@ -6,9 +6,15 @@ import { api } from "../../shared/api";
 const FIELD_LABEL_CLASSES = "grid gap-2 text-sm font-extrabold text-[#c7d2e1]";
 const FIELD_CLASSES = "min-h-12 w-full rounded-xl border border-white/14 bg-[#182131] px-3.5 text-base text-white outline-none transition-[border-color,box-shadow] focus:border-[#71b9ff]/70 focus:shadow-[0_0_0_4px_rgba(66,169,255,0.1)]";
 
+function localCalendarDate() {
+  const currentDate = new Date();
+  const localTime = currentDate.getTime() - currentDate.getTimezoneOffset() * 60_000;
+  return new Date(localTime).toISOString().slice(0, 10);
+}
+
 function createForm(kind, measurement, fields) {
   const form = {
-    measured_on: measurement?.measured_on || new Date().toISOString().slice(0, 10),
+    measured_on: measurement?.measured_on || localCalendarDate(),
     note: measurement?.note || "",
   };
   if (kind === "weight") form.weight = measurement?.weight ?? "";
@@ -25,6 +31,7 @@ export default function MeasurementDialog({ fields, kind, measurement, onClose, 
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const isSavingRef = useRef(false);
+  const dialogRef = useRef(null);
   const firstInputRef = useRef(null);
   const title = kind === "weight" ? (measurement ? "Изменить вес" : "Добавить вес") : (measurement ? "Изменить замеры" : "Добавить замеры");
 
@@ -32,7 +39,24 @@ export default function MeasurementDialog({ fields, kind, measurement, onClose, 
     const previousFocus = document.activeElement;
     firstInputRef.current?.focus();
     function closeOnEscape(event) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusableElements = [...dialogRef.current.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+      )];
+      if (!focusableElements.length) return;
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements.at(-1);
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
     }
     document.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -68,7 +92,7 @@ export default function MeasurementDialog({ fields, kind, measurement, onClose, 
 
   return (
     <div className="fixed inset-0 z-100 grid place-items-start overflow-y-auto overscroll-contain bg-[#02060c]/80 p-4 backdrop-blur-xl sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <form className="relative mx-auto my-5 grid max-h-[calc(100vh-48px)] w-full max-w-[620px] gap-4 overflow-y-auto rounded-3xl border border-white/12 bg-[linear-gradient(145deg,rgba(23,29,45,0.99),rgba(9,14,24,0.99))] p-5 text-white shadow-[0_38px_100px_rgba(0,0,0,0.58)] sm:p-7" onSubmit={save} role="dialog" aria-modal="true" aria-labelledby="measurement-dialog-title">
+      <form ref={dialogRef} className="relative mx-auto my-5 grid max-h-[calc(100vh-48px)] w-full max-w-[620px] gap-4 overflow-y-auto rounded-3xl border border-white/12 bg-[linear-gradient(145deg,rgba(23,29,45,0.99),rgba(9,14,24,0.99))] p-5 text-white shadow-[0_38px_100px_rgba(0,0,0,0.58)] sm:p-7" onSubmit={save} role="dialog" aria-modal="true" aria-labelledby="measurement-dialog-title">
         <button type="button" className="absolute top-5 right-5 grid size-11 cursor-pointer place-items-center rounded-xl border border-white/10 bg-white/[0.07] text-[#b8c0cf] transition-[transform,background-color,color] hover:bg-white/[0.12] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71b9ff] active:scale-[0.96]" onClick={onClose} aria-label="Закрыть форму">
           <X aria-hidden="true" />
         </button>

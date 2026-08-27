@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.use({ timezoneId: "Europe/Moscow" });
+
 const fields = [
   { id: 1, slug: "waist", name: "Талия", unit: "см", sort_order: 10, active: true },
   { id: 2, slug: "belly", name: "Живот", unit: "см", sort_order: 20, active: true },
@@ -164,4 +166,33 @@ test("double click saves one weight measurement", async ({ page }) => {
   await dialog.getByRole("button", { name: "Сохранить вес" }).dblclick();
 
   await expect.poll(() => saveRequests).toBe(1);
+});
+
+test("measurement dialog traps focus and restores it to the trigger", async ({ page }) => {
+  await mockProgressApi(page, []);
+  await page.goto("/progress");
+  const trigger = page.getByRole("button", { name: "Добавить вес" }).first();
+  await trigger.focus();
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "Добавить вес" });
+  const closeButton = dialog.getByRole("button", { name: "Закрыть форму" });
+  const saveButton = dialog.getByRole("button", { name: "Сохранить вес" });
+
+  await closeButton.focus();
+  await page.keyboard.press("Shift+Tab");
+  await expect(saveButton).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(closeButton).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+});
+
+test("new measurement defaults to the local calendar date", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2030-01-01T22:30:00Z"));
+  await mockProgressApi(page, []);
+  await page.goto("/progress");
+  await page.getByRole("button", { name: "Добавить вес" }).first().click();
+
+  await expect(page.getByRole("dialog", { name: "Добавить вес" }).getByLabel("Дата"))
+    .toHaveValue("2030-01-02");
 });

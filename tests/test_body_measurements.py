@@ -187,6 +187,134 @@ class BodyMeasurementApiTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(count, 1)
 
+    def test_editing_weight_side_of_mixed_record_splits_without_moving_tape(self):
+        mixed = self.client.post(
+            "/api/progress",
+            json={
+                "measured_on": "2030-03-03",
+                "weight": 74,
+                "waist": 80,
+                "note": "Общая заметка",
+            },
+        ).get_json()["measurements"][0]
+
+        response = self.client.patch(
+            f"/api/measurements/weight/{mixed['id']}",
+            json={
+                "measured_on": "2030-03-04",
+                "weight": 73.8,
+                "note": "Только вес",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        measurements = self.client.get("/api/measurements").get_json()["measurements"]
+        by_type = {measurement["record_type"]: measurement for measurement in measurements}
+        self.assertEqual(by_type["tape"]["measured_on"], "2030-03-03")
+        self.assertEqual(by_type["tape"]["note"], "Общая заметка")
+        self.assertIsNone(by_type["tape"]["weight"])
+        self.assertEqual(by_type["tape"]["values"]["waist"], 80)
+        self.assertEqual(by_type["weight"]["measured_on"], "2030-03-04")
+        self.assertEqual(by_type["weight"]["note"], "Только вес")
+        self.assertEqual(by_type["weight"]["weight"], 73.8)
+        self.assertEqual(by_type["weight"]["values"], {})
+
+    def test_editing_tape_side_of_mixed_record_splits_and_moves_all_values(self):
+        mixed = self.client.post(
+            "/api/progress",
+            json={
+                "measured_on": "2030-03-03",
+                "weight": 74,
+                "waist": 80,
+                "belly": 84,
+                "note": "Общая заметка",
+            },
+        ).get_json()["measurements"][0]
+
+        response = self.client.patch(
+            f"/api/measurements/tape/{mixed['id']}",
+            json={
+                "measured_on": "2030-03-05",
+                "values": {"waist": 79.5},
+                "note": "Только лента",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        measurements = self.client.get("/api/measurements").get_json()["measurements"]
+        by_type = {measurement["record_type"]: measurement for measurement in measurements}
+        self.assertEqual(by_type["weight"]["measured_on"], "2030-03-03")
+        self.assertEqual(by_type["weight"]["note"], "Общая заметка")
+        self.assertEqual(by_type["weight"]["weight"], 74)
+        self.assertEqual(by_type["weight"]["values"], {})
+        self.assertEqual(by_type["tape"]["measured_on"], "2030-03-05")
+        self.assertEqual(by_type["tape"]["note"], "Только лента")
+        self.assertEqual(by_type["tape"]["values"], {"waist": 79.5, "belly": 84})
+
+    def test_mixed_weight_move_conflict_rolls_back_without_splitting(self):
+        mixed = self.client.post(
+            "/api/progress",
+            json={
+                "measured_on": "2030-03-03",
+                "weight": 74,
+                "waist": 80,
+                "note": "Исходная",
+            },
+        ).get_json()["measurements"][0]
+        self.client.post(
+            "/api/measurements/weight",
+            json={"measured_on": "2030-03-04", "weight": 73.9, "note": "Конфликт"},
+        )
+
+        response = self.client.patch(
+            f"/api/measurements/weight/{mixed['id']}",
+            json={"measured_on": "2030-03-04", "weight": 73.8, "note": "Новая"},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        measurements = self.client.get("/api/measurements").get_json()["measurements"]
+        self.assertEqual(len(measurements), 2)
+        unchanged = next(item for item in measurements if item["id"] == mixed["id"])
+        self.assertEqual(unchanged["record_type"], "mixed")
+        self.assertEqual(unchanged["measured_on"], "2030-03-03")
+        self.assertEqual(unchanged["note"], "Исходная")
+        self.assertEqual(unchanged["weight"], 74)
+        self.assertEqual(unchanged["values"]["waist"], 80)
+
+    def test_mixed_tape_move_conflict_rolls_back_without_splitting(self):
+        mixed = self.client.post(
+            "/api/progress",
+            json={
+                "measured_on": "2030-03-03",
+                "weight": 74,
+                "waist": 80,
+                "note": "Исходная",
+            },
+        ).get_json()["measurements"][0]
+        self.client.post(
+            "/api/measurements/tape",
+            json={"measured_on": "2030-03-04", "values": {"belly": 83}},
+        )
+
+        response = self.client.patch(
+            f"/api/measurements/tape/{mixed['id']}",
+            json={
+                "measured_on": "2030-03-04",
+                "values": {"waist": 79.5},
+                "note": "Новая",
+            },
+        )
+
+        self.assertEqual(response.status_code, 409)
+        measurements = self.client.get("/api/measurements").get_json()["measurements"]
+        self.assertEqual(len(measurements), 2)
+        unchanged = next(item for item in measurements if item["id"] == mixed["id"])
+        self.assertEqual(unchanged["record_type"], "mixed")
+        self.assertEqual(unchanged["measured_on"], "2030-03-03")
+        self.assertEqual(unchanged["note"], "Исходная")
+        self.assertEqual(unchanged["weight"], 74)
+        self.assertEqual(unchanged["values"]["waist"], 80)
+
     def test_legacy_combined_save_creates_one_mixed_record(self):
         response = self.client.post(
             "/api/progress",

@@ -62,6 +62,7 @@ def serialize_measurement(connection, row) -> dict | None:
 
 def save_tape_measurement(payload: dict, measurement_id: int | None = None) -> dict:
     with db() as connection:
+        connection.execute("BEGIN IMMEDIATE")
         repository = BodyMeasurementRepository(connection)
         existing = repository.measurement_by_id(measurement_id) if measurement_id else None
         if measurement_id is not None and not existing:
@@ -75,6 +76,29 @@ def save_tape_measurement(payload: dict, measurement_id: int | None = None) -> d
         values = _tape_values(repository, payload)
         if measurement_id is None and not any(value is not None for value in values.values()):
             raise ValueError("Укажи хотя бы один сантиметровый замер.")
+        if existing and existing["weight"] is not None:
+            existing_values = {
+                value["field_id"]: value["value"]
+                for value in repository.values_for_measurements([existing["id"]])
+            }
+            complete_values = {**existing_values, **values}
+            if not any(value is not None for value in complete_values.values()):
+                raise ValueError("Укажи хотя бы один сантиметровый замер.")
+            _ensure_no_conflict(
+                repository, measured_on, ("tape", "mixed"), existing["id"]
+            )
+            repository.update_measurement(
+                existing["id"],
+                existing["measured_on"],
+                "weight",
+                existing["weight"],
+                existing["note"],
+            )
+            repository.clear_values(existing["id"])
+            target_id = repository.create_measurement(measured_on, "tape", None, note)
+            repository.set_values(target_id, complete_values)
+            row = repository.measurement_by_id(target_id)
+            return _serialize_measurements(repository, [row])[0]
         target = _resolve_target(
             repository, measured_on, ("tape", "mixed"), measurement_id
         )
@@ -93,6 +117,7 @@ def save_tape_measurement(payload: dict, measurement_id: int | None = None) -> d
 
 def save_weight_measurement(payload: dict, measurement_id: int | None = None) -> dict:
     with db() as connection:
+        connection.execute("BEGIN IMMEDIATE")
         repository = BodyMeasurementRepository(connection)
         existing = repository.measurement_by_id(measurement_id) if measurement_id else None
         if measurement_id is not None and not existing:
@@ -108,6 +133,22 @@ def save_weight_measurement(payload: dict, measurement_id: int | None = None) ->
         note = str(
             payload.get("note", existing["note"] if existing else "") or ""
         ).strip()
+        if existing and repository.values_for_measurements([existing["id"]]):
+            _ensure_no_conflict(
+                repository, measured_on, ("weight", "mixed"), existing["id"]
+            )
+            repository.update_measurement(
+                existing["id"],
+                existing["measured_on"],
+                "tape",
+                None,
+                existing["note"],
+            )
+            target_id = repository.create_measurement(
+                measured_on, "weight", weight, note
+            )
+            row = repository.measurement_by_id(target_id)
+            return _serialize_measurements(repository, [row])[0]
         target = _resolve_target(
             repository, measured_on, ("weight", "mixed"), measurement_id
         )
@@ -208,6 +249,16 @@ def _resolve_target(repository, measured_on, record_types, measurement_id):
             "На эту дату найдено несколько исторических записей такого вида. Они не объединены автоматически."
         )
     return matches[0] if matches else None
+
+
+def _ensure_no_conflict(repository, measured_on, record_types, excluded_id):
+    conflicts = repository.matching_measurements(
+        measured_on, record_types, excluded_id=excluded_id
+    )
+    if conflicts:
+        raise MeasurementConflictError(
+            "На эту дату уже есть запись такого вида. Выбери существующую запись."
+        )
 
 
 def _tape_values(repository, payload: dict) -> dict[int, float | None]:
