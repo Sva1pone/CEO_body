@@ -21,6 +21,7 @@ from backend.services.exercise_packs import (  # noqa: E402
     build_exercise_pack,
     import_exercise_pack,
     inspect_exercise_pack,
+    preview_exercise_pack,
 )
 from tests.fixtures import create_test_data  # noqa: E402
 
@@ -126,6 +127,21 @@ class ExercisePackTests(unittest.TestCase):
         catalog = self.catalog(content)
         self.assertEqual(summary["exercises"], 1)
         self.assertEqual(len(catalog["placements"]), 1)
+
+    def test_preview_lists_placed_and_unplaced_exercises(self) -> None:
+        content, _ = build_exercise_pack({"all": True}, False)
+        preview = preview_exercise_pack(upload(content))
+
+        listed = [
+            exercise["name"]
+            for template in preview["templates"]
+            for subgroup in template["subgroups"]
+            for exercise in subgroup["exercises"]
+        ]
+        unplaced = [exercise["name"] for exercise in preview["unplaced_exercises"]]
+        catalog_names = [row["name"] for row in self.catalog(content)["exercises"]]
+
+        self.assertEqual(sorted(set(listed + unplaced)), sorted(catalog_names))
 
     def test_conflict_policies_skip_replace_and_copy(self) -> None:
         content, _ = build_exercise_pack({"all": True}, False)

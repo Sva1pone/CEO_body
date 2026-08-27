@@ -439,6 +439,10 @@ def inspect_exercise_pack(upload: FileStorage | None) -> dict:
 def preview_exercise_pack(upload: FileStorage | None) -> dict:
     inspected = inspect_exercise_pack(upload)
     catalog = inspected["catalog"]
+    exercises_by_key = {exercise["key"]: exercise for exercise in catalog["exercises"]}
+    placed_exercise_keys = {
+        placement["exercise_key"] for placement in catalog["placements"]
+    }
     return {
         "manifest": inspected["manifest"],
         "summary": inspected["summary"],
@@ -448,16 +452,22 @@ def preview_exercise_pack(upload: FileStorage | None) -> dict:
                 "subgroups": [
                     {
                         **subgroup,
-                        "exercise_count": sum(
-                            placement["subgroup_key"] == subgroup["key"]
+                        "exercises": [
+                            exercises_by_key[placement["exercise_key"]]
                             for placement in catalog["placements"]
-                        ),
+                            if placement["subgroup_key"] == subgroup["key"]
+                        ],
                     }
                     for subgroup in catalog["subgroups"]
                     if subgroup["template_key"] == template["key"]
                 ],
             }
             for template in catalog["templates"]
+        ],
+        "unplaced_exercises": [
+            exercise
+            for exercise in catalog["exercises"]
+            if exercise["key"] not in placed_exercise_keys
         ],
     }
 

@@ -78,8 +78,15 @@ class AnalyticsRepository:
                ORDER BY ci.session_id, ci.sort_order, ci.id""",
             period,
         ).fetchall()
-        latest_measurement = self.connection.execute(
+        latest_tape_measurement = self.connection.execute(
             """SELECT * FROM measurements WHERE measured_on<=?
+               AND record_type IN ('tape', 'mixed')
+               ORDER BY measured_on DESC, id DESC LIMIT 1""",
+            (end,),
+        ).fetchone()
+        latest_weight_measurement = self.connection.execute(
+            """SELECT * FROM measurements WHERE measured_on<=?
+               AND weight IS NOT NULL
                ORDER BY measured_on DESC, id DESC LIMIT 1""",
             (end,),
         ).fetchone()
@@ -101,7 +108,8 @@ class AnalyticsRepository:
             entries,
             cardio_sessions,
             cardio_intervals,
-            latest_measurement,
+            latest_tape_measurement,
+            latest_weight_measurement,
             workouts,
             sets,
         )

@@ -46,10 +46,12 @@ function buildReportMarkdown(report) {
     "",
   ];
   const measure = report.latest_measurement;
+  const weightDate = measure?.weight_measured_on || measure?.measured_on;
+  const tapeDate = measure?.tape_measured_on || measure?.measured_on;
   lines.push(
     "## Крайняя биометрия",
     measure
-      ? `- ${measure.measured_on}: вес ${measure.weight ?? "—"} кг; талия ${measure.waist ?? "—"} см; живот ${measure.belly ?? "—"} см; плечи ${measure.shoulders ?? "—"} см; бицепс ${measure.biceps ?? "—"} см; грудь ${measure.chest ?? "—"} см; бёдра ${measure.hips ?? "—"} см; бедро ${measure.thigh ?? "—"} см.`
+      ? `- Вес (${weightDate || "дата не указана"}): ${measure.weight ?? "—"} кг. Замеры (${tapeDate || "дата не указана"}): талия ${measure.waist ?? "—"} см; живот ${measure.belly ?? "—"} см; плечи ${measure.shoulders ?? "—"} см; бицепс ${measure.biceps ?? "—"} см; грудь ${measure.chest ?? "—"} см; бёдра ${measure.hips ?? "—"} см; бедро ${measure.thigh ?? "—"} см.`
       : "- Замеры ещё не внесены.",
     "",
   );
@@ -307,8 +309,7 @@ export default function ReportPage() {
             <small className="text-xs text-[#98a2b5]">Крайняя биометрия</small>
             {report.latest_measurement ? (
               <b className="text-sm text-[#f3f5fa]">
-                {report.latest_measurement.measured_on} · Вес{" "}
-                {report.latest_measurement.weight ?? "—"} кг · Талия{" "}
+                Вес {report.latest_measurement.weight_measured_on || report.latest_measurement.measured_on}: {report.latest_measurement.weight ?? "—"} кг · Замеры {report.latest_measurement.tape_measured_on || report.latest_measurement.measured_on}: Талия{" "}
                 {report.latest_measurement.waist ?? "—"} см · Живот{" "}
                 {report.latest_measurement.belly ?? "—"} см · Плечи{" "}
                 {report.latest_measurement.shoulders ?? "—"} см · Бицепс{" "}

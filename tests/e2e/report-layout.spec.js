@@ -39,8 +39,8 @@ test("latest report response wins after a faster refresh", async ({ page }) => {
   });
 
   await page.goto("/report");
-  await page.getByLabel("С").fill("2035-02-01");
-  await page.getByLabel("По").fill("2035-02-28");
+  await page.getByLabel("С", { exact: true }).fill("2035-02-01");
+  await page.getByLabel("По", { exact: true }).fill("2035-02-28");
   await page.getByRole("button", { name: "Обновить" }).click();
 
   await expect(page.getByText("Глобальный счёт на 2035-02-28:")).toBeVisible();

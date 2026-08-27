@@ -645,6 +645,27 @@ class BackendApiTest(unittest.TestCase):
         self.assertEqual(report["days"], [])
         self.assertEqual(report["aggregate"]["days_count"], 0)
 
+    def test_report_combines_latest_weight_and_tape_measurement_dates(self) -> None:
+        weight = self.client.post(
+            "/api/measurements/weight",
+            json={"measured_on": "2030-01-08", "weight": 73.7},
+        )
+        tape = self.client.post(
+            "/api/measurements/tape",
+            json={"measured_on": "2030-01-10", "values": {"waist": 81.1}},
+        )
+        self.assertEqual(weight.status_code, 200)
+        self.assertEqual(tape.status_code, 200)
+
+        measurement = self.client.get(
+            "/api/report?start=2030-01-01&end=2030-01-31"
+        ).get_json()["latest_measurement"]
+
+        self.assertEqual(measurement["weight"], 73.7)
+        self.assertEqual(measurement["weight_measured_on"], "2030-01-08")
+        self.assertEqual(measurement["waist"], 81.1)
+        self.assertEqual(measurement["tape_measured_on"], "2030-01-10")
+
     def test_sleep_may_be_cleared(self) -> None:
         payload = self.materialize_day("2030-01-14")
         self.assertEqual(payload["day"]["phase"], "Тестовый режим")

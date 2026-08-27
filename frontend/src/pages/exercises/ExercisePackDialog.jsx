@@ -72,6 +72,8 @@ function formatBytes(bytes) {
 export default function ExercisePackDialog({ data, onClose, onImported }) {
   const dialogRef = useRef(null);
   const closeButtonRef = useRef(null);
+  const summaryRequestRef = useRef(0);
+  const previewRequestRef = useRef(0);
   const [tab, setTab] = useState("export");
   const [selection, setSelection] = useState(() => selectionState(data));
   const [includeImages, setIncludeImages] = useState(false);
@@ -99,15 +101,28 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
   );
   useEffect(() => {
     if (tab !== "export") return undefined;
+    const requestId = summaryRequestRef.current + 1;
+    summaryRequestRef.current = requestId;
+    const controller = new window.AbortController();
     const timer = setTimeout(() => {
       api("/api/exercise-packs/summary", {
         method: "POST",
         body: JSON.stringify(payload),
+        signal: controller.signal,
       })
-        .then(setSummary)
-        .catch((reason) => setError(reason.message));
+        .then((nextSummary) => {
+          if (summaryRequestRef.current === requestId) setSummary(nextSummary);
+        })
+        .catch((reason) => {
+          if (reason.name !== "AbortError" && summaryRequestRef.current === requestId) {
+            setError(reason.message);
+          }
+        });
     }, 120);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [payload, tab]);
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -209,6 +224,8 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
 
   async function inspectPack(file) {
     if (!file) return;
+    const requestId = previewRequestRef.current + 1;
+    previewRequestRef.current = requestId;
     setPack(file);
     setPreview(null);
     setResult(null);
@@ -217,14 +234,15 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
     const body = new FormData();
     body.set("pack", file);
     try {
-      setPreview(
-        await api("/api/exercise-packs/preview", { method: "POST", body }),
-      );
+      const nextPreview = await api("/api/exercise-packs/preview", { method: "POST", body });
+      if (previewRequestRef.current === requestId) setPreview(nextPreview);
     } catch (reason) {
-      setPack(null);
-      setError(reason.message);
+      if (previewRequestRef.current === requestId) {
+        setPack(null);
+        setError(reason.message);
+      }
     } finally {
-      setBusy(false);
+      if (previewRequestRef.current === requestId) setBusy(false);
     }
   }
 
@@ -281,7 +299,7 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
         </header>
         <div className="my-4 grid grid-cols-2 gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1.5">
           {[['export', 'Экспорт'], ['import', 'Импорт']].map(([value, label]) => (
-            <button key={value} type="button" className={`${BUTTON} ${tab === value ? "border-[#6c75ff] bg-[#6c75ff]/20 text-white" : ""}`} onClick={() => setTab(value)}>{label}</button>
+            <button key={value} type="button" aria-pressed={tab === value} className={`${BUTTON} ${tab === value ? "border-[#6c75ff] bg-[#6c75ff]/20 text-white" : ""}`} onClick={() => setTab(value)}>{label}</button>
           ))}
         </div>
         {tab === "export" ? (
@@ -294,11 +312,13 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
                 const selectedCount = groups.reduce(
                   (count, group) =>
                     count +
+                    Number(selection.subgroupIds.has(group.id)) +
                     subgroupExerciseIds(data, group.id).filter((id) =>
                       selection.placementKeys.has(placementKey(group.id, id)),
                     ).length,
                   0,
                 );
+                const selectableCount = groups.length + ids.length;
                 return (
                   <div className="ml-3 border-l border-white/10 pl-2" key={template.id}>
                     <ParentCheckbox
@@ -317,7 +337,7 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
                             })
                           : selection.templateIds.has(template.id)
                       }
-                      indeterminate={groups.length > 0 && selectedCount > 0 && selectedCount < ids.length}
+                      indeterminate={groups.length > 0 && selectedCount > 0 && selectedCount < selectableCount}
                       label={template.name}
                       onChange={(event) =>
                         groups.length
@@ -419,7 +439,25 @@ export default function ExercisePackDialog({ data, onClose, onImported }) {
             {preview && (
               <div className="grid gap-3 rounded-2xl border border-white/[0.08] bg-[#090f19]/70 p-4">
                 <b>Предпросмотр: {preview.summary.templates} дней, {preview.summary.subgroups} подгрупп, {preview.summary.exercises} упражнений, {preview.summary.images} изображений</b>
-                <div className="max-h-44 overflow-y-auto text-sm text-[#b8c5d6]">{preview.templates.map((template) => <div key={template.key} className="py-1"><strong className="text-white">{template.name}</strong>{template.subgroups.map((group) => <span className="ml-3" key={group.key}>{group.name} ({group.exercise_count})</span>)}</div>)}</div>
+                <div className="max-h-52 overflow-y-auto text-sm text-[#b8c5d6]">
+                  {preview.templates.map((template) => (
+                    <div key={template.key} className="py-1">
+                      <strong className="text-white">{template.name}</strong>
+                      {template.subgroups.map((group) => (
+                        <div className="ml-3" key={group.key}>
+                          <span>{group.name} ({group.exercises.length})</span>
+                          {group.exercises.map((exercise) => <div className="ml-4 text-[#98a8bd]" key={exercise.key}>{exercise.name}</div>)}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  {preview.unplaced_exercises?.length > 0 && (
+                    <div className="py-1">
+                      <strong className="text-white">Без размещения</strong>
+                      {preview.unplaced_exercises.map((exercise) => <div className="ml-4 text-[#98a8bd]" key={exercise.key}>{exercise.name}</div>)}
+                    </div>
+                  )}
+                </div>
                 <label className="grid gap-2 text-sm font-extrabold text-[#c7cfdb]">При совпадении названий<select className="min-h-11 rounded-xl border border-white/12 bg-[#161e2d] px-3 text-white" value={policy} onChange={(event) => setPolicy(event.target.value)}><option value="skip">Пропустить существующие</option><option value="replace">Заменить данные существующих</option><option value="copy">Создать копии с новым названием</option></select></label>
                 <button type="button" className={BUTTON} disabled={busy} onClick={importPack}><PackageOpen size={17} />{busy ? "Импортирую…" : "Импортировать целиком"}</button>
               </div>

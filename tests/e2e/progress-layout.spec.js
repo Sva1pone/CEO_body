@@ -196,3 +196,35 @@ test("new measurement defaults to the local calendar date", async ({ page }) => 
   await expect(page.getByRole("dialog", { name: "Добавить вес" }).getByLabel("Дата"))
     .toHaveValue("2030-01-02");
 });
+
+test("long dynamic measurement list stays within the desktop viewport", async ({ page }) => {
+  const longFields = [
+    ...fields,
+    { id: 3, slug: "right-forearm", name: "Предплечье справа", unit: "см", sort_order: 30, active: true },
+    { id: 4, slug: "left-calf", name: "Голень слева", unit: "см", sort_order: 40, active: true },
+    { id: 5, slug: "custom-long", name: "Очень длинное название пользовательской части тела", unit: "см", sort_order: 50, active: true },
+  ];
+  await mockProgressApi(page, [
+    {
+      id: 5,
+      measured_on: "2030-03-04",
+      record_type: "tape",
+      weight: null,
+      note: "Контрольный замер",
+      values: Object.fromEntries(longFields.map((field, index) => [field.slug, 30 + index])),
+    },
+  ], { initialFields: longFields });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/progress");
+  await page.getByText("5 значений", { exact: true }).click();
+
+  expect(await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+  await expect(page.getByText("Очень длинное название пользовательской части тела 34 см", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Добавить замеры" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Добавить замеры" });
+  await expect(dialog.getByLabel("Очень длинное название пользовательской части тела, см")).toBeVisible();
+  expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+});

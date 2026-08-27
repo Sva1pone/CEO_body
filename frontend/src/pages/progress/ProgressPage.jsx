@@ -21,6 +21,15 @@ function formatValue(value) {
   return Number(value).toLocaleString("ru-RU", { maximumFractionDigits: 1 });
 }
 
+function valueCountText(count) {
+  const lastTwoDigits = count % 100;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return `${count} значений`;
+  const lastDigit = count % 10;
+  if (lastDigit === 1) return `${count} значение`;
+  if (lastDigit >= 2 && lastDigit <= 4) return `${count} значения`;
+  return `${count} значений`;
+}
+
 function getTapeValues(measurement, fieldsBySlug) {
   return Object.entries(measurement.values || {}).map(([slug, value]) => ({
     slug,
@@ -222,7 +231,7 @@ export default function ProgressPage() {
                       <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center justify-between gap-3 rounded-xl text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71b9ff]">
                         <span className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
                           <b className="text-white">{measurement.measured_on}</b>
-                          <span className="text-[#aeb4c3]">{values.length} {values.length === 1 ? "значение" : "значения"}</span>
+                          <span className="text-[#aeb4c3]">{valueCountText(values.length)}</span>
                           <span className="truncate text-[#c7d2e1]">
                             {values.slice(0, 3).map((item) => `${item.name} ${formatValue(item.value)}`).join(" · ")}
                             {values.length > 3 ? " · …" : ""}

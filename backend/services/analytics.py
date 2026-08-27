@@ -179,7 +179,8 @@ def get_report(start: str, end: str) -> dict:
             food_entries,
             cardio_sessions,
             cardio_intervals,
-            latest_measurement,
+            latest_tape_measurement,
+            latest_weight_measurement,
             workouts,
             workout_sets,
         ) = AnalyticsRepository(connection).report_data(start, end)
@@ -202,12 +203,30 @@ def get_report(start: str, end: str) -> dict:
             period_summaries,
             connection,
         )
+        latest_measurement = serialize_measurement(connection, latest_tape_measurement)
+        latest_weight = serialize_measurement(connection, latest_weight_measurement)
+        if latest_measurement is None:
+            latest_measurement = latest_weight
+        if latest_measurement is not None:
+            latest_measurement["tape_measured_on"] = (
+                latest_tape_measurement["measured_on"]
+                if latest_tape_measurement
+                else None
+            )
+            latest_measurement["weight"] = (
+                latest_weight["weight"] if latest_weight else None
+            )
+            latest_measurement["weight_measured_on"] = (
+                latest_weight_measurement["measured_on"]
+                if latest_weight_measurement
+                else None
+            )
         return {
             "start": start,
             "end": end,
             "days": report_days,
             "aggregate": aggregate,
-            "latest_measurement": serialize_measurement(connection, latest_measurement),
+            "latest_measurement": latest_measurement,
             "global_balance": round(global_balance_at_end, 1),
         }
 
