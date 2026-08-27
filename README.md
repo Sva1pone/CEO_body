@@ -6,7 +6,8 @@
   <img alt="React 18" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=111827">
   <img alt="Tailwind CSS 4" src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-local--first-003B57?logo=sqlite&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-58_unit_%2B_46_E2E-22C55E">
+  <img alt="Release 2.0.0" src="https://img.shields.io/badge/release-2.0.0-6D5DFC">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-87_backend_%2B_63_E2E-22C55E">
   <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-F7DF1E">
 </p>
 
@@ -22,6 +23,7 @@
 - [Возможности](#возможности)
 - [Как устроено приложение](#как-устроено-приложение)
 - [Быстрый старт](#быстрый-старт)
+- [Обновление](#обновление)
 - [Первый запуск](#первый-запуск)
 - [Где хранятся данные](#где-хранятся-данные)
 - [Работа с нейросетями](#работа-с-нейросетями)
@@ -44,10 +46,13 @@
 - планирование дня с учётом сна, активности и тренировки;
 - каталог упражнений и шаблоны тренировок;
 - журнал силовых подходов и кардио;
-- замеры тела и история веса;
+- раздельные истории веса и сантиметровых замеров с настраиваемыми частями тела;
+- постоянный центр внимания для незакрытых дней и просроченных замеров;
 - статистика, подробные отчёты и анализ тренда веса;
+- независимое запоминание диапазонов дат на аналитических страницах;
 - выгрузка подробного отчёта в Markdown для работы с нейросетями;
 - версионируемая стратегия с TDEE, белковым коридором и целевой дельтой;
+- импорт и экспорт переносимых паков упражнений `.ceopack.zip`;
 - локальные резервные копии базы данных;
 - загружаемые изображения продуктов и упражнений.
 
@@ -112,6 +117,24 @@ npm run build
 ```powershell
 .venv\Scripts\pythonw.exe app.py --headless
 ```
+
+## Обновление
+
+Актуальные версии публикуются в [GitHub Releases](https://github.com/Sva1pone/CEO_body/releases). Перед обновлением остановите приложение и сохраните копии каталогов `data/` и `static/uploads/`.
+
+Если проект установлен через Git:
+
+```powershell
+git switch main
+git pull --ff-only
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+npm ci
+npm run build
+```
+
+После этого снова запустите `Запустить СЕО.bat`. При первом запуске версии 2.0.0 старая схема замеров переносится автоматически. До миграции приложение создаёт отдельную резервную копию SQLite с пометкой `measurement-model-v1` в `data/backups/`.
+
+Не заменяйте каталог `data/` файлами из архива исходного кода: он содержит локальный профиль пользователя.
 
 ## Первый запуск
 
