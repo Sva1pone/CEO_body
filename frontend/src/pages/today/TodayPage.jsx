@@ -16,6 +16,7 @@ import {
 import { api } from "../../shared/api";
 import { deficitStatus } from "../../shared/deficitStatus";
 import { format } from "../../shared/format";
+import { useReminders } from "../../shared/reminders";
 import {
   CinematicHeroArt,
   ErrorState,
@@ -27,6 +28,7 @@ import {
 import { DaySetup, TrainingStarter } from "./components/DayPlanning";
 import { DayDetails, DateNavigator, SleepPanel } from "./components/DayMetrics";
 import { TodayFood } from "./components/FinisherPanel";
+import ReminderCenter from "./components/ReminderCenter";
 import {
   MealPlate,
   MealTabs,
@@ -46,6 +48,7 @@ const HERO_ART_FILTER = {
 };
 
 export default function TodayPage() {
+  const { reminders, refreshReminders } = useReminders();
   const date =
     new URLSearchParams(location.search).get("date") ||
     new Date().toISOString().slice(0, 10);
@@ -132,7 +135,16 @@ export default function TodayPage() {
   if (!data.day.setup_done)
     return (
       <Shell active="today" cinematic>
-        <DaySetup data={data} mutate={setData} />
+        <div className="grid gap-5">
+          <ReminderCenter reminders={reminders} />
+          <DaySetup
+            data={data}
+            mutate={(next) => {
+              setData(next);
+              refreshReminders();
+            }}
+          />
+        </div>
       </Shell>
     );
   const meal = data.day.current_meal;
@@ -281,6 +293,7 @@ export default function TodayPage() {
           method: "POST",
         }),
       );
+      await refreshReminders();
       setToast(
         data.day.closed_at
           ? "День снова открыт"
@@ -358,6 +371,7 @@ export default function TodayPage() {
           </div>
         </div>
       </header>
+      <ReminderCenter reminders={reminders} />
       <MealTabs
         data={data}
         mutate={setData}

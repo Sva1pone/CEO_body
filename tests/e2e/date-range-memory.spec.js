@@ -84,32 +84,32 @@ test("date ranges survive reload and stay isolated between pages", async ({
   await expect(
     page.getByRole("heading", { name: "История без потери деталей" }),
   ).toBeVisible();
-  await page.getByLabel("С").fill("2035-07-01");
-  await page.getByLabel("По").fill("2035-07-31");
+  await page.getByLabel("С", { exact: true }).fill("2035-07-01");
+  await page.getByLabel("По", { exact: true }).fill("2035-07-31");
   await submitRange(page, "/api/report?", "Обновить");
 
   await page.reload();
-  await expect(page.getByLabel("С")).toHaveValue("2035-07-01");
-  await expect(page.getByLabel("По")).toHaveValue("2035-07-31");
+  await expect(page.getByLabel("С", { exact: true })).toHaveValue("2035-07-01");
+  await expect(page.getByLabel("По", { exact: true })).toHaveValue("2035-07-31");
 
   await page.goto("/statistics");
   await expect(
     page.getByRole("heading", { name: "Не отдельные дни, а система" }),
   ).toBeVisible();
-  await page.getByLabel("С").fill("2035-05-01");
-  await page.getByLabel("По").fill("2035-05-31");
+  await page.getByLabel("С", { exact: true }).fill("2035-05-01");
+  await page.getByLabel("По", { exact: true }).fill("2035-05-31");
   await submitRange(page, "/api/statistics?", "Пересчитать");
 
   await page.goto("/weight-trend");
   await expect(
     page.getByRole("heading", { name: "Вес и энергобаланс" }),
   ).toBeVisible();
-  await page.getByLabel("От").fill("2034-01-01");
-  await page.getByLabel("До").fill("2035-01-01");
+  await page.getByLabel("От", { exact: true }).fill("2034-01-01");
+  await page.getByLabel("До", { exact: true }).fill("2035-01-01");
   await submitRange(page, "/api/weight-trend?", "Пересчитать");
   await page.reload();
-  await expect(page.getByLabel("От")).toHaveValue("2034-01-01");
-  await expect(page.getByLabel("До")).toHaveValue("2035-01-01");
+  await expect(page.getByLabel("От", { exact: true })).toHaveValue("2034-01-01");
+  await expect(page.getByLabel("До", { exact: true })).toHaveValue("2035-01-01");
 
   const storedRanges = await page.evaluate(
     ([reportKey, statisticsKey, weightTrendKey]) => ({
@@ -145,8 +145,8 @@ test("damaged stored ranges are replaced with page defaults", async ({
     const today = new Date().toISOString().slice(0, 10);
     return { start: `${today.slice(0, 8)}01`, end: today };
   });
-  await expect(page.getByLabel("С")).toHaveValue(reportDefault.start);
-  await expect(page.getByLabel("По")).toHaveValue(reportDefault.end);
+  await expect(page.getByLabel("С", { exact: true })).toHaveValue(reportDefault.start);
+  await expect(page.getByLabel("По", { exact: true })).toHaveValue(reportDefault.end);
 
   await page.goto("/statistics");
   const statisticsDefault = await page.evaluate(() => {
@@ -157,8 +157,8 @@ test("damaged stored ranges are replaced with page defaults", async ({
       end: new Date().toISOString().slice(0, 10),
     };
   });
-  await expect(page.getByLabel("С")).toHaveValue(statisticsDefault.start);
-  await expect(page.getByLabel("По")).toHaveValue(statisticsDefault.end);
+  await expect(page.getByLabel("С", { exact: true })).toHaveValue(statisticsDefault.start);
+  await expect(page.getByLabel("По", { exact: true })).toHaveValue(statisticsDefault.end);
 });
 
 test("an incomplete date edit does not call the report API or overwrite storage", async ({
@@ -168,15 +168,15 @@ test("an incomplete date edit does not call the report API or overwrite storage"
   await expect(
     page.getByRole("heading", { name: "История без потери деталей" }),
   ).toBeVisible();
-  await page.getByLabel("С").fill("2035-07-01");
-  await page.getByLabel("По").fill("2035-07-31");
+  await page.getByLabel("С", { exact: true }).fill("2035-07-01");
+  await page.getByLabel("По", { exact: true }).fill("2035-07-31");
   await submitRange(page, "/api/report?", "Обновить");
 
   let reportRequests = 0;
   page.on("request", (request) => {
     if (request.url().includes("/api/report?")) reportRequests += 1;
   });
-  await page.getByLabel("С").fill("");
+  await page.getByLabel("С", { exact: true }).fill("");
   await page.getByRole("button", { name: "Обновить" }).click();
   await page.waitForTimeout(150);
 

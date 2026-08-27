@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { BarChart3, ChevronDown, Pencil, Plus, Ruler, Scale } from "lucide-react";
 
 import { api } from "../../shared/api";
+import { useReminders } from "../../shared/reminders";
 import {
   CinematicHeroArt,
   ErrorState,
@@ -41,10 +42,15 @@ function EmptyHistory({ children, actionLabel, onAction }) {
 }
 
 export default function ProgressPage() {
+  const { refreshReminders } = useReminders();
   const [data, setData] = useState(null);
   const [allFields, setAllFields] = useState([]);
   const [error, setError] = useState("");
-  const [dialog, setDialog] = useState(null);
+  const [dialog, setDialog] = useState(() =>
+    new URLSearchParams(location.search).get("action") === "add-tape"
+      ? { kind: "tape", measurement: null }
+      : null,
+  );
 
   const load = useCallback(async () => {
     setError("");
@@ -98,6 +104,12 @@ export default function ProgressPage() {
 
   function openDialog(kind, measurement = null) {
     setDialog({ kind, measurement });
+  }
+
+  function closeDialog() {
+    setDialog(null);
+    if (new URLSearchParams(location.search).get("action") === "add-tape")
+      window.history.replaceState({}, "", "/progress");
   }
 
   return (
@@ -253,10 +265,12 @@ export default function ProgressPage() {
           )}
           kind={dialog.kind}
           measurement={dialog.measurement}
-          onClose={() => setDialog(null)}
+          onClose={closeDialog}
           onSaved={async () => {
-            setDialog(null);
+            const savedKind = dialog.kind;
+            closeDialog();
             await load();
+            if (savedKind === "tape") await refreshReminders();
           }}
         />
       )}

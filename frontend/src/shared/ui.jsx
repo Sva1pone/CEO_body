@@ -15,6 +15,30 @@ import {
 } from "lucide-react";
 
 import { ICONS } from "./constants";
+import { useReminders } from "./reminders";
+
+function NavigationReminder({ itemKey, reminders, mobile = false }) {
+  if (itemKey === "today" && reminders?.unclosed_days.count > 0) {
+    const count = reminders.unclosed_days.count;
+    return (
+      <span
+        className={`${mobile ? "absolute -top-2 -right-3 min-w-5 px-1 text-[9px]" : "ml-auto min-w-6 px-1.5 text-[10px]"} grid h-5 place-items-center rounded-full bg-[#f0b94e] font-black leading-none text-[#1d170b] shadow-[0_0_0_2px_#152031]`}
+        aria-label={`Незакрытых дней: ${count}`}
+      >
+        {count}
+      </span>
+    );
+  }
+  if (itemKey === "progress" && reminders?.measurement.overdue) {
+    return (
+      <span
+        className={`${mobile ? "absolute -top-1 -right-2" : "ml-auto"} size-2.5 rounded-full bg-[#68bfff] shadow-[0_0_10px_rgba(104,191,255,0.8)]`}
+        aria-label="Просрочены замеры тела"
+      />
+    );
+  }
+  return null;
+}
 
 export function CategoryIcon({ product, size = 22, className = "size-25 rounded-xl" }) {
   const Icon = ICONS[product.category_icon] || Utensils;
@@ -90,6 +114,7 @@ export function CinematicHeroArt({ className = "" }) {
 }
 
 export function Shell({ children, active, cinematic = false }) {
+  const { reminders } = useReminders();
   const links = [
     ["/", "Сегодня", Home, "today"],
     ["/exercises", "Упражнения", Dumbbell, "exercises"],
@@ -147,6 +172,7 @@ export function Shell({ children, active, cinematic = false }) {
             >
               <Icon size={26} strokeWidth={1.8} />
               <span>{label}</span>
+              <NavigationReminder itemKey={key} reminders={reminders} />
             </a>
           ))}
         </nav>
@@ -183,7 +209,10 @@ export function Shell({ children, active, cinematic = false }) {
             href={href}
             className={`grid justify-items-center gap-[3px] rounded-[11px] p-[7px] text-[8px] font-bold no-underline ${mobileLinkTone} ${active === key ? mobileActiveTone : ""}`}
           >
-            <Icon size={20} />
+            <span className="relative">
+              <Icon size={20} />
+              <NavigationReminder itemKey={key} reminders={reminders} mobile />
+            </span>
             <span>{label}</span>
           </a>
         ))}

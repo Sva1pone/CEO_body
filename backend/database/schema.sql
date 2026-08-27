@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS strategy_versions (
     protein_min REAL NOT NULL,
     protein_max REAL NOT NULL,
     goal_delta REAL NOT NULL,
+    measurement_reminder_days INTEGER NOT NULL DEFAULT 14,
     note TEXT,
     created_at TEXT NOT NULL
 );

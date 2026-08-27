@@ -60,6 +60,7 @@ export default function SettingsPage() {
           protein_min: active?.protein_min || "",
           protein_max: active?.protein_max || "",
           goal_delta: active?.goal_delta ?? "",
+          measurement_reminder_days: active?.measurement_reminder_days ?? 14,
           note: "",
         });
       })
@@ -234,6 +235,26 @@ export default function SettingsPage() {
               <small className="text-xs leading-relaxed font-medium text-[#8898ad]">−500 означает целевой дефицит 500 ккал.</small>
             </label>
             <label className={FIELD_LABEL_CLASSES}>
+              Напоминать о замерах через, дней
+              <input
+                className={FIELD_CLASSES}
+                type="number"
+                min="1"
+                step="1"
+                value={form.measurement_reminder_days}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    measurement_reminder_days: event.target.value,
+                  })
+                }
+                required
+              />
+              <small className="text-xs leading-relaxed font-medium text-[#8898ad]">
+                Срок считается от последнего сантиметрового замера.
+              </small>
+            </label>
+            <label className={FIELD_LABEL_CLASSES}>
               Причина изменения
               <textarea
                 className={`${FIELD_CLASSES} min-h-[110px] resize-y py-3`}
@@ -292,6 +313,9 @@ export default function SettingsPage() {
                       {Number(version.goal_delta) > 0 ? "+" : ""}
                       {format(version.goal_delta)}
                     </b>
+                  </span>
+                  <span>
+                    Замеры через <b>{version.measurement_reminder_days} дн.</b>
                   </span>
                 </div>
                 {version.note && <p className="m-0 text-sm leading-relaxed text-[#aab7c8]">{version.note}</p>}

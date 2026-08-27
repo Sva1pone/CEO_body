@@ -9,6 +9,7 @@ import StatisticsPage from "../pages/statistics/StatisticsPage";
 import TodayPage from "../pages/today/TodayPage";
 import WorkoutPage from "../pages/workout/WorkoutPage";
 import WeightTrendPage from "../pages/weight-trend/WeightTrendPage";
+import { RemindersProvider } from "../shared/reminders";
 
 const routes = [
   { pathPrefix: "/exercises", Page: ExercisesPage },
@@ -28,5 +29,9 @@ export default function App() {
   const CurrentPage =
     currentPath === "/" ? TodayPage : matchedRoute?.Page ?? NotFoundPage;
 
-  return <CurrentPage />;
+  return (
+    <RemindersProvider>
+      <CurrentPage />
+    </RemindersProvider>
+  );
 }

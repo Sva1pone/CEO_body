@@ -1,4 +1,7 @@
 MISSING_COLUMNS = {
+    "strategy_versions": {
+        "measurement_reminder_days": "INTEGER NOT NULL DEFAULT 14",
+    },
     "measurements": {
         "record_type": "TEXT NOT NULL DEFAULT 'mixed' CHECK(record_type IN ('weight', 'tape', 'mixed'))",
     },

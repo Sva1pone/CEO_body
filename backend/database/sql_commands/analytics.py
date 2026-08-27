@@ -9,8 +9,8 @@ class AnalyticsRepository:
         self.connection.execute(
             """INSERT INTO strategy_versions(
                    effective_from, phase, base_tdee, protein_min, protein_max,
-                   goal_delta, note, created_at
-               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                   goal_delta, measurement_reminder_days, note, created_at
+               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 strategy["effective_from"],
                 strategy["phase"],
@@ -18,6 +18,7 @@ class AnalyticsRepository:
                 strategy["protein_min"],
                 strategy["protein_max"],
                 strategy["goal_delta"],
+                strategy["measurement_reminder_days"],
                 strategy["note"],
                 created_at,
             ),

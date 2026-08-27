@@ -4,7 +4,7 @@ import sqlite3
 from datetime import date, datetime
 
 from backend.database.sql_commands.analytics import AnalyticsRepository
-from backend.services.runtime import db, parse_number
+from backend.services.runtime import db, parse_integer, parse_number
 
 
 class StrategyVersionAlreadyExistsError(Exception):
@@ -25,6 +25,10 @@ def validate_strategy_payload(payload: dict) -> dict:
     protein_min = parse_number(payload.get("protein_min"), "минимум белка")
     protein_max = parse_number(payload.get("protein_max"), "максимум белка")
     goal_delta = parse_number(payload.get("goal_delta"), "целевую дельту")
+    measurement_reminder_days = parse_integer(
+        payload.get("measurement_reminder_days", 14),
+        "интервал напоминания о замерах",
+    )
     if not phase:
         raise ValueError("Укажи название фазы.")
     if not 1200 <= base_tdee <= 4000:
@@ -35,6 +39,8 @@ def validate_strategy_payload(payload: dict) -> dict:
         )
     if not -1500 <= goal_delta <= 1000:
         raise ValueError("Целевая дельта должна быть от −1500 до +1000 ккал.")
+    if measurement_reminder_days < 1:
+        raise ValueError("Интервал напоминания о замерах должен быть не меньше 1 дня.")
 
     return {
         "effective_from": effective_from,
@@ -43,6 +49,7 @@ def validate_strategy_payload(payload: dict) -> dict:
         "protein_min": protein_min,
         "protein_max": protein_max,
         "goal_delta": goal_delta,
+        "measurement_reminder_days": measurement_reminder_days,
         "note": str(payload.get("note") or "").strip(),
     }
 
